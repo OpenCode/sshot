@@ -5,11 +5,11 @@ import gtk
 from datetime import datetime
 import sqlite3
 from os.path import expanduser, isdir
-from os import mkdir
+from os import mkdir, sep
 
 connections_list_columns = ['Name', 'Host', 'Port']
 user_home = expanduser('~')
-base_path = '%s/%s' % (user_home, '.sshot')
+base_path = '%s%s%s' % (user_home, sep, '.sshot')
 
 
 def init_db(conn, cr):
@@ -40,7 +40,9 @@ class Sshot:
         self.log('Environment is ready!')
         # ----- DB
         self.log('Open Connection with configuration db')
-        conn = sqlite3.connect('%s/%s' % (base_path, 'sshot.db'))
+        conn = sqlite3.connect('%s%s%s' % (base_path,
+                                           sep,
+                                           'sshot.db'))
         self.log('Init connection cursor')
         cr = conn.cursor()
         init_db(conn, cr)

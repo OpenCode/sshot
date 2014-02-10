@@ -4,17 +4,28 @@ import gtk
 
 from datetime import datetime
 import sqlite3
-from os.path import expanduser
+from os.path import expanduser, isdir
+from os import mkdir
 
 connections_list_columns = ['Name', 'Host', 'Port']
 user_home = expanduser('~')
+base_path = '%s/%s' % (user_home, '.sshot')
 
 
 def init_db(conn, cr):
 
-    sql = 'create table if not exists connection (name str, host str, port str)'
+    sql = 'create table if not exists connection'
+    sql = '%s (name str, host str, port str)' % (sql)
     cr.execute(sql)
     conn.commit()
+    return True
+
+
+def prepare_environment():
+
+    if not isdir(base_path):
+        mkdir(base_path)
+    return True
 
 
 class Sshot:
@@ -24,9 +35,12 @@ class Sshot:
 
     def __init__(self):
         # ----- Init elements
+        self.log('Prepare environment...')
+        prepare_environment()
+        self.log('Environment is ready!')
         # ----- DB
         self.log('Open Connection with configuration db')
-        conn = sqlite3.connect('%s/%s' % (user_home, 'sshot.db'))
+        conn = sqlite3.connect('%s/%s' % (base_path, 'sshot.db'))
         self.log('Init connection cursor')
         cr = conn.cursor()
         init_db(conn, cr)
@@ -44,14 +58,12 @@ class Sshot:
         self.lbl_connections.set_use_markup(gtk.TRUE)
         self.lst_connections = gtk.ListStore(str, str, str)
         self.trv_connections = gtk.TreeView(model=self.lst_connections)
+        # ----- Render the cell for the list
         for i in range(len(connections_list_columns)):
-            # cellrenderer to render the text
             cell = gtk.CellRendererText()
-            # the column is created
             col = gtk.TreeViewColumn(connections_list_columns[i],
                                      cell, text=i)
             col.set_resizable(True)
-            # and it is appended to the treeview
             self.trv_connections.append_column(col)
         # ----- Content
         self.vbox = gtk.VBox(spacing=10)

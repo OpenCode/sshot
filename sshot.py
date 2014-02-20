@@ -31,7 +31,8 @@ import sqlite3
 from os.path import expanduser, isdir
 from os import mkdir, sep
 
-connections_list_columns = ['ID', 'Name', 'Host', 'Port']
+connections_list_columns = ['ID', 'Name', 'Host', 'Password', 'Port']
+connection_list_field = 'id, name, host, password, port'
 user_home = expanduser('~')
 base_path = '%s%s%s' % (user_home, sep, '.sshot')
 
@@ -40,7 +41,7 @@ def init_db(conn, cr):
 
     sql = 'create table if not exists connection'
     sql = '%s (id integer primary key default null,' % (sql)
-    sql = '%sname str, host str, port str)' % (sql)
+    sql = '%sname str, password str, host str, port str)' % (sql)
     cr.execute(sql)
     conn.commit()
     return True
@@ -77,7 +78,7 @@ class Sshot(QtGui.QMainWindow):
         self.setWindowTitle('SSHot')
         self.statusBar().showMessage('SSHot: A Software To Rule Them All!')
         # ----- Extract and show all the connections in the db
-        rows = cr.execute('SELECT * FROM connection ORDER BY NAME')
+        rows = cr.execute('SELECT ' + connection_list_field + ' FROM connection ORDER BY NAME')
         rows = rows.fetchall()
         connections_list = QtGui.QTableWidget(
             len(rows), len(connections_list_columns))

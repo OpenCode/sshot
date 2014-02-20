@@ -57,10 +57,26 @@ def prepare_environment():
 
 class InsertForm(QtGui.QMainWindow):
 
+    conn = False
+
     def _insert_connection(self):
-        print 'Du Sumfing, plz!!!'
+        query = 'INSERT INTO connection (%s) VALUES ('
+        query = query % (connection_list_field.replace('id, ', ''))
+        query = "%s'%s'," % (query, self.edit_name.text())
+        query = "%s'%s'," % (query, self.edit_host.text())
+        query = "%s'%s'," % (query, self.edit_user.text())
+        query = "%s'%s'," % (query, self.edit_password.text())
+        query = "%s'%s'" % (query, self.edit_port.text())
+        query = '%s)' % query
+        print query
+        cr = self.conn.cursor()
+        cr.execute(query)
+        self.conn.commit()
 
     def __init__(self):
+        self.conn = sqlite3.connect('%s%s%s' % (base_path,
+                                                sep,
+                                                'sshot.db'))
         # ----- Window
         QtGui.QMainWindow.__init__(self)
         self.resize(350, 250)
@@ -69,23 +85,33 @@ class InsertForm(QtGui.QMainWindow):
 
         grid = QtGui.QGridLayout(cWidget)
 
-        edit_name = QtGui.QLineEdit("Name")
-        edit_host = QtGui.QLineEdit("Host")
-        edit_user = QtGui.QLineEdit("User")
-        edit_password = QtGui.QLineEdit("Passowrd")
-        edit_port = QtGui.QLineEdit("Port")
+        lbl_name = QtGui.QLabel("Name")
+        lbl_host = QtGui.QLabel("Host")
+        lbl_user = QtGui.QLabel("User")
+        lbl_password = QtGui.QLabel("Password")
+        lbl_port = QtGui.QLabel("Port")
+        self.edit_name = QtGui.QLineEdit()
+        self.edit_host = QtGui.QLineEdit()
+        self.edit_user = QtGui.QLineEdit()
+        self.edit_password = QtGui.QLineEdit()
+        self.edit_port = QtGui.QLineEdit()
 
-        button_save = QtGui.QPushButton('Save');
-        button_save.setFont(QtGui.QFont("Times", 10, QtGui.QFont.Bold));
+        button_save = QtGui.QPushButton('Save')
+        button_save.setFont(QtGui.QFont("Times", 10, QtGui.QFont.Bold))
         self.connect(button_save, QtCore.SIGNAL('clicked()'),
-                     self._insert_connection);
+                     self._insert_connection)
 
-        grid.addWidget(edit_name, 0, 0)
-        grid.addWidget(edit_host, 0, 1)
-        grid.addWidget(edit_user, 1, 0)
-        grid.addWidget(edit_password, 1, 1)
-        grid.addWidget(edit_port, 2, 0)
-        grid.addWidget(button_save, 2, 1)
+        grid.addWidget(lbl_name, 0, 0)
+        grid.addWidget(self.edit_name, 0, 1)
+        grid.addWidget(lbl_host, 1, 0)
+        grid.addWidget(self.edit_host, 1, 1)
+        grid.addWidget(lbl_user, 2, 0)
+        grid.addWidget(self.edit_user, 2, 1)
+        grid.addWidget(lbl_password, 3, 0)
+        grid.addWidget(self.edit_password, 3, 1)
+        grid.addWidget(lbl_port, 4, 0)
+        grid.addWidget(self.edit_port, 4, 1)
+        grid.addWidget(button_save, 5, 0)
 
         cWidget.setLayout(grid)
         self.setCentralWidget(cWidget)
@@ -133,9 +159,15 @@ class Sshot(QtGui.QMainWindow):
                 self.conn.commit()
         self.draw_table(cr)
 
+    def _click_refresh(self):
+        cr = self.conn.cursor()
+        self.draw_table(cr)
+
     def draw_table(self, cr):
         # ----- Extract and show all the connections in the db
-        rows = cr.execute('SELECT ' + connection_list_field + ' FROM connection ORDER BY NAME')
+        query = 'SELECT %s FROM connection ORDER BY NAME'
+        query = query % (connection_list_field)
+        rows = cr.execute(query)
         rows = rows.fetchall()
         connections_list = QtGui.QTableWidget(
             len(rows), len(connections_list_columns))
@@ -156,7 +188,8 @@ class Sshot(QtGui.QMainWindow):
             for field in range(len(row)):
                 item = QtGui.QTableWidgetItem(str(row[field]))
                 # ----- The rows are only selectable and not editable
-                item.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
+                item.setFlags(
+                    QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
                 connections_list.setItem(row_count, field, item)
             row_count += 1
         # ----- Set generic value
@@ -177,7 +210,8 @@ class Sshot(QtGui.QMainWindow):
         init_db(self.conn, cr)
         # ----- Window
         QtGui.QMainWindow.__init__(self)
-        self.resize(350, 250)
+        self.setFocusPolicy(QtCore.Qt.StrongFocus)
+        self.resize(600, 400)
         self.setWindowTitle('SSHot')
         self.statusBar().showMessage('SSHot: A Software To Rule Them All!')
         # ----- Toolbar and relative buttons
@@ -203,6 +237,13 @@ class Sshot(QtGui.QMainWindow):
         self.connect(button_insert, QtCore.SIGNAL('triggered()'),
                      self._click_insert)
         toolbar.addAction(button_insert)
+        button_refresh = QtGui.QAction(
+            QtGui.QIcon("icons/refresh.png"), "Refresh", self)
+        button_refresh.setShortcut("F5")
+        button_refresh.setStatusTip("Refresh Table")
+        self.connect(button_refresh, QtCore.SIGNAL('triggered()'),
+                     self._click_refresh)
+        toolbar.addAction(button_refresh)
         # ----- Draw the main table
         self.draw_table(cr)
 

@@ -31,7 +31,8 @@ from os.path import expanduser, isdir
 from os import mkdir, sep
 import subprocess
 
-connections_list_columns = ['ID', 'Name', 'Host', 'User', 'Password', 'Port']
+connections_list_columns = ['ID', 'Name', 'Host', 'User',
+                            'Password', 'Port']
 connection_list_field = 'id, name, host, user, password, port'
 user_home = expanduser('~')
 base_path = '%s%s%s' % (user_home, sep, '.sshot')
@@ -57,11 +58,12 @@ def prepare_environment():
 class Sshot(QtGui.QMainWindow):
 
     connections_list = False
+    conn = False
 
     def log(self, text):
         print '[%s] %s' % (datetime.today(), text)
 
-    def table_double_click(self, clicked_object):
+    def _table_double_click(self, clicked_object):
         row = clicked_object.row()
         host = self.connections_list.item(row, 2).text()
         user = self.connections_list.item(row, 3).text()
@@ -72,42 +74,32 @@ class Sshot(QtGui.QMainWindow):
         complete_host = '%s@%s' % (user, host)
         args = ['xterm', '-e', 'sshpass', '-p', password,
                 'ssh', complete_host, '-p', port]
-        print args
         subprocess.Popen(args)
 
-    def __init__(self):
-        # ----- Environment
-        self.log('Prepare environment...')
-        prepare_environment()
-        self.log('Environment is ready!')
-        # ----- DB
-        self.log('Open connection for db')
-        conn = sqlite3.connect('%s%s%s' % (base_path,
-                                           sep,
-                                           'sshot.db'))
-        self.log('Init connection cursor')
-        cr = conn.cursor()
-        init_db(conn, cr)
-        # ----- Window
-        QtGui.QMainWindow.__init__(self)
-        self.resize(350, 250)
-        self.setWindowTitle('SSHot')
-        self.statusBar().showMessage('SSHot: A Software To Rule Them All!')
-        # ----- Toolbar and relative buttons
-        toolbar = self.addToolBar('Buttons')
-        button_quit = QtGui.QAction(QtGui.QIcon("icons/close.png"),
-                                    "Quit", self)
-        button_quit.setShortcut("Ctrl+Q")
-        button_quit.setStatusTip("Quit application")
-        self.connect(button_quit, QtCore.SIGNAL('triggered()'),
-                     QtCore.SLOT('close()'))
-        toolbar.addAction(button_quit)
+    def _click_delete(self):
+        select_model = self.connections_list.selectionModel()
+        if not select_model.selectedRows():
+            QtGui.QMessageBox.warning(
+                self, 'Error', "Select a record from the table to delete it",
+                "Continue")
+        cr = self.conn.cursor()
+        query = 'delete from connection where id = %s'
+        for model_index in select_model.selectedRows():
+            selected_row = model_index.row()
+            id = self.connections_list.item(selected_row, 0).text()
+            if id:
+                self.log('Delete connection with id %s' % (id))
+                cr.execute(query % (id))
+                self.conn.commit()
+        self.draw_table(cr)
+
+    def draw_table(self, cr):
         # ----- Extract and show all the connections in the db
         rows = cr.execute('SELECT ' + connection_list_field + ' FROM connection ORDER BY NAME')
         rows = rows.fetchall()
         connections_list = QtGui.QTableWidget(
             len(rows), len(connections_list_columns))
-        connections_list.doubleClicked.connect(self.table_double_click)
+        connections_list.doubleClicked.connect(self._table_double_click)
         connections_list.setSelectionBehavior(
             QtGui.QAbstractItemView.SelectRows)
         # ----- Adapt TableView Columns width to content
@@ -129,6 +121,44 @@ class Sshot(QtGui.QMainWindow):
             row_count += 1
         # ----- Set generic value
         self.connections_list = connections_list
+
+    def __init__(self):
+        # ----- Environment
+        self.log('Prepare environment...')
+        prepare_environment()
+        self.log('Environment is ready!')
+        # ----- DB
+        self.log('Open connection for db')
+        self.conn = sqlite3.connect('%s%s%s' % (base_path,
+                                                sep,
+                                                'sshot.db'))
+        self.log('Init connection cursor')
+        cr = self.conn.cursor()
+        init_db(self.conn, cr)
+        # ----- Window
+        QtGui.QMainWindow.__init__(self)
+        self.resize(350, 250)
+        self.setWindowTitle('SSHot')
+        self.statusBar().showMessage('SSHot: A Software To Rule Them All!')
+        # ----- Toolbar and relative buttons
+        toolbar = self.addToolBar('Buttons')
+        button_quit = QtGui.QAction(QtGui.QIcon("icons/close.png"),
+                                    "Quit", self)
+        button_quit.setShortcut("Ctrl+Q")
+        button_quit.setStatusTip("Quit application")
+        self.connect(button_quit, QtCore.SIGNAL('triggered()'),
+                     QtCore.SLOT('close()'))
+        toolbar.addAction(button_quit)
+        button_delete = QtGui.QAction(
+            QtGui.QIcon("icons/delete.png"), "Delete", self)
+        button_delete.setShortcut("Ctrl+D")
+        button_delete.setStatusTip("Delete Connection")
+        self.connect(button_delete, QtCore.SIGNAL('triggered()'),
+                     self._click_delete)
+        toolbar.addAction(button_delete)
+        # ----- Draw the main table
+        self.draw_table(cr)
+
 
 if __name__ == "__main__":
     app = QtGui.QApplication(sys.argv)

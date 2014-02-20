@@ -7,7 +7,7 @@ Install
 
     python-qt4
     python-qt4-dev
-    an ssh client
+    openssh
     xterm
     sshpass
 

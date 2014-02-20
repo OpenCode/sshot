@@ -55,6 +55,42 @@ def prepare_environment():
     return True
 
 
+class InsertForm(QtGui.QMainWindow):
+
+    def _insert_connection(self):
+        print 'Du Sumfing, plz!!!'
+
+    def __init__(self):
+        # ----- Window
+        QtGui.QMainWindow.__init__(self)
+        self.resize(350, 250)
+        self.setWindowTitle('SSHot - Insert Connection')
+        cWidget = QtGui.QWidget(self)
+
+        grid = QtGui.QGridLayout(cWidget)
+
+        edit_name = QtGui.QLineEdit("Name")
+        edit_host = QtGui.QLineEdit("Host")
+        edit_user = QtGui.QLineEdit("User")
+        edit_password = QtGui.QLineEdit("Passowrd")
+        edit_port = QtGui.QLineEdit("Port")
+
+        button_save = QtGui.QPushButton('Save');
+        button_save.setFont(QtGui.QFont("Times", 10, QtGui.QFont.Bold));
+        self.connect(button_save, QtCore.SIGNAL('clicked()'),
+                     self._insert_connection);
+
+        grid.addWidget(edit_name, 0, 0)
+        grid.addWidget(edit_host, 0, 1)
+        grid.addWidget(edit_user, 1, 0)
+        grid.addWidget(edit_password, 1, 1)
+        grid.addWidget(edit_port, 2, 0)
+        grid.addWidget(button_save, 2, 1)
+
+        cWidget.setLayout(grid)
+        self.setCentralWidget(cWidget)
+
+
 class Sshot(QtGui.QMainWindow):
 
     connections_list = False
@@ -75,6 +111,10 @@ class Sshot(QtGui.QMainWindow):
         args = ['xterm', '-e', 'sshpass', '-p', password,
                 'ssh', complete_host, '-p', port]
         subprocess.Popen(args)
+
+    def _click_insert(self):
+        self.insert_form = InsertForm()
+        self.insert_form.show()
 
     def _click_delete(self):
         select_model = self.connections_list.selectionModel()
@@ -156,6 +196,13 @@ class Sshot(QtGui.QMainWindow):
         self.connect(button_delete, QtCore.SIGNAL('triggered()'),
                      self._click_delete)
         toolbar.addAction(button_delete)
+        button_insert = QtGui.QAction(
+            QtGui.QIcon("icons/add.png"), "Insert", self)
+        button_insert.setShortcut("Ctrl+I")
+        button_insert.setStatusTip("Insert Connection")
+        self.connect(button_insert, QtCore.SIGNAL('triggered()'),
+                     self._click_insert)
+        toolbar.addAction(button_insert)
         # ----- Draw the main table
         self.draw_table(cr)
 

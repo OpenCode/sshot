@@ -82,6 +82,11 @@ class Sshot(QtGui.QMainWindow):
         rows = rows.fetchall()
         connections_list = QtGui.QTableWidget(
             len(rows), len(connections_list_columns))
+        connections_list.setSelectionBehavior(
+            QtGui.QAbstractItemView.SelectRows)
+        # ----- Adapt TableView Columns width to content
+        connections_list.horizontalHeader().setResizeMode(
+            QtGui.QHeaderView.Stretch)
         self.setCentralWidget(connections_list)
         self.log('Founded %s records' % str(len(rows)))
         # ----- Create header for TableView
@@ -95,9 +100,6 @@ class Sshot(QtGui.QMainWindow):
                     row_count, field,
                     QtGui.QTableWidgetItem(str(row[field])))
             row_count += 1
-        # ----- Adapt TableView Columns width to content
-        connections_list.horizontalHeader().setResizeMode(
-            QtGui.QHeaderView.Stretch)
 
 if __name__ == "__main__":
     app = QtGui.QApplication(sys.argv)

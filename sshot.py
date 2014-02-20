@@ -25,7 +25,6 @@
 
 import sys
 from PyQt4 import QtGui, QtCore
-#from PyQt4 import QtGui
 from datetime import datetime
 import sqlite3
 from os.path import expanduser, isdir
@@ -77,6 +76,12 @@ class Sshot(QtGui.QMainWindow):
         self.resize(350, 250)
         self.setWindowTitle('SSHot')
         self.statusBar().showMessage('SSHot: A Software To Rule Them All!')
+        toolbar = self.addToolBar('Buttons')
+        quit = QtGui.QAction(QtGui.QIcon("icons/close.png"), "Quit", self)
+        quit.setShortcut("Ctrl+Q")
+        quit.setStatusTip("Quit application")
+        self.connect(quit, QtCore.SIGNAL('triggered()'), QtCore.SLOT('close()'))
+        toolbar.addAction(quit)
         # ----- Extract and show all the connections in the db
         rows = cr.execute('SELECT ' + connection_list_field + ' FROM connection ORDER BY NAME')
         rows = rows.fetchall()

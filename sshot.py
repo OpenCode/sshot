@@ -29,9 +29,10 @@ from datetime import datetime
 import sqlite3
 from os.path import expanduser, isdir
 from os import mkdir, sep
+import subprocess
 
-connections_list_columns = ['ID', 'Name', 'Host', 'Password', 'Port']
-connection_list_field = 'id, name, host, password, port'
+connections_list_columns = ['ID', 'Name', 'Host', 'User', 'Password', 'Port']
+connection_list_field = 'id, name, host, user, password, port'
 user_home = expanduser('~')
 base_path = '%s%s%s' % (user_home, sep, '.sshot')
 
@@ -40,7 +41,7 @@ def init_db(conn, cr):
 
     sql = 'create table if not exists connection'
     sql = '%s (id integer primary key default null,' % (sql)
-    sql = '%sname str, password str, host str, port str)' % (sql)
+    sql = '%sname str, user str, password str, host str, port str)' % (sql)
     cr.execute(sql)
     conn.commit()
     return True
@@ -55,8 +56,24 @@ def prepare_environment():
 
 class Sshot(QtGui.QMainWindow):
 
+    connections_list = False
+
     def log(self, text):
         print '[%s] %s' % (datetime.today(), text)
+
+    def table_double_click(self, clicked_object):
+        row = clicked_object.row()
+        host = self.connections_list.item(row, 2).text()
+        user = self.connections_list.item(row, 3).text()
+        password = self.connections_list.item(row, 4).text()
+        port = self.connections_list.item(row, 5).text()
+        port = port or '22'
+        self.log('Connect to %s with user %s' % (host, user))
+        complete_host = '%s@%s' % (user, host)
+        args = ['xterm', '-e', 'sshpass', '-p', password,
+                'ssh', complete_host, '-p', port]
+        print args
+        subprocess.Popen(args)
 
     def __init__(self):
         # ----- Environment
@@ -76,17 +93,21 @@ class Sshot(QtGui.QMainWindow):
         self.resize(350, 250)
         self.setWindowTitle('SSHot')
         self.statusBar().showMessage('SSHot: A Software To Rule Them All!')
+        # ----- Toolbar and relative buttons
         toolbar = self.addToolBar('Buttons')
-        quit = QtGui.QAction(QtGui.QIcon("icons/close.png"), "Quit", self)
-        quit.setShortcut("Ctrl+Q")
-        quit.setStatusTip("Quit application")
-        self.connect(quit, QtCore.SIGNAL('triggered()'), QtCore.SLOT('close()'))
-        toolbar.addAction(quit)
+        button_quit = QtGui.QAction(QtGui.QIcon("icons/close.png"),
+                                    "Quit", self)
+        button_quit.setShortcut("Ctrl+Q")
+        button_quit.setStatusTip("Quit application")
+        self.connect(button_quit, QtCore.SIGNAL('triggered()'),
+                     QtCore.SLOT('close()'))
+        toolbar.addAction(button_quit)
         # ----- Extract and show all the connections in the db
         rows = cr.execute('SELECT ' + connection_list_field + ' FROM connection ORDER BY NAME')
         rows = rows.fetchall()
         connections_list = QtGui.QTableWidget(
             len(rows), len(connections_list_columns))
+        connections_list.doubleClicked.connect(self.table_double_click)
         connections_list.setSelectionBehavior(
             QtGui.QAbstractItemView.SelectRows)
         # ----- Adapt TableView Columns width to content
@@ -106,6 +127,8 @@ class Sshot(QtGui.QMainWindow):
                 item.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
                 connections_list.setItem(row_count, field, item)
             row_count += 1
+        # ----- Set generic value
+        self.connections_list = connections_list
 
 if __name__ == "__main__":
     app = QtGui.QApplication(sys.argv)

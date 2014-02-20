@@ -24,8 +24,8 @@
 # ######################################################################
 
 import sys
-#from PyQt4 import QtGui, QtCore
-from PyQt4 import QtGui
+from PyQt4 import QtGui, QtCore
+#from PyQt4 import QtGui
 from datetime import datetime
 import sqlite3
 from os.path import expanduser, isdir
@@ -96,9 +96,10 @@ class Sshot(QtGui.QMainWindow):
         row_count = 0
         for row in rows:
             for field in range(len(row)):
-                connections_list.setItem(
-                    row_count, field,
-                    QtGui.QTableWidgetItem(str(row[field])))
+                item = QtGui.QTableWidgetItem(str(row[field]))
+                # ----- The rows are only selectable and not editable
+                item.setFlags(QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)
+                connections_list.setItem(row_count, field, item)
             row_count += 1
 
 if __name__ == "__main__":

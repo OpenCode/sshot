@@ -95,6 +95,9 @@ class Sshot(QtGui.QMainWindow):
                     row_count, field,
                     QtGui.QTableWidgetItem(str(row[field])))
             row_count += 1
+        # ----- Adapt TableView Columns width to content
+        connections_list.horizontalHeader().setResizeMode(
+            QtGui.QHeaderView.Stretch)
 
 if __name__ == "__main__":
     app = QtGui.QApplication(sys.argv)

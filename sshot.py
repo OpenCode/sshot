@@ -58,22 +58,35 @@ def prepare_environment():
 class InsertForm(QtGui.QMainWindow):
 
     conn = False
+    MainWindow = False
 
     def _insert_connection(self):
-        query = 'INSERT INTO connection (%s) VALUES ('
-        query = query % (connection_list_field.replace('id, ', ''))
-        query = "%s'%s'," % (query, self.edit_name.text())
-        query = "%s'%s'," % (query, self.edit_host.text())
-        query = "%s'%s'," % (query, self.edit_user.text())
-        query = "%s'%s'," % (query, self.edit_password.text())
-        query = "%s'%s'" % (query, self.edit_port.text())
-        query = '%s)' % query
-        print query
-        cr = self.conn.cursor()
-        cr.execute(query)
-        self.conn.commit()
+        name = self.edit_name.text()
+        host = self.edit_host.text()
+        user = self.edit_user.text()
+        password = self.edit_password.text()
+        port = self.edit_port.text()
+        if not (name and host and user and password):
+            QtGui.QMessageBox.warning(
+                self, 'Error', "Name, Host, User and Password are required",
+                "Continue")
+        else:
+            query = 'INSERT INTO connection (%s) VALUES ('
+            query = query % (connection_list_field.replace('id, ', ''))
+            query = "%s'%s'," % (query, name)
+            query = "%s'%s'," % (query, host)
+            query = "%s'%s'," % (query, user)
+            query = "%s'%s'," % (query, password)
+            query = "%s'%s'" % (query, port)
+            query = '%s)' % query
+            cr = self.conn.cursor()
+            cr.execute(query)
+            self.conn.commit()
+            self.MainWindow.draw_table(cr)
+            self.close()
 
-    def __init__(self):
+    def __init__(self, MainWindow):
+        self.MainWindow = MainWindow
         self.conn = sqlite3.connect('%s%s%s' % (base_path,
                                                 sep,
                                                 'sshot.db'))
@@ -139,7 +152,7 @@ class Sshot(QtGui.QMainWindow):
         subprocess.Popen(args)
 
     def _click_insert(self):
-        self.insert_form = InsertForm()
+        self.insert_form = InsertForm(self)
         self.insert_form.show()
 
     def _click_delete(self):

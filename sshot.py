@@ -31,6 +31,12 @@ from os.path import expanduser, isdir
 from os import mkdir, sep
 import subprocess
 
+
+__NAME__ = 'SSHot'
+__VERSIONE__ = '0.1.0'
+__AUTHOR__ = 'Francesco OpenCode Apruzzese <opencode@e-ware.org>'
+__WEBSITE__ = 'www.e-ware.org'
+
 connections_list_columns = ['ID', 'Name', 'Host', 'User',
                             'Password', 'Port', 'Last Connection']
 connection_list_field = 'id, name, host, user, password, port, last_connection'

@@ -38,6 +38,9 @@ user_home = expanduser('~')
 base_path = '%s%s%s' % (user_home, sep, '.sshot')
 
 
+def log(text):
+    print '[%s] %s' % (datetime.today(), text)
+
 def init_db(conn, cr):
 
     sql = 'create table if not exists connection'
@@ -82,6 +85,7 @@ class InsertForm(QtGui.QMainWindow):
             cr = self.conn.cursor()
             cr.execute(query)
             self.conn.commit()
+            log("Connection %s created!" % (name))
             self.MainWindow.draw_table(cr)
             self.close()
 
@@ -135,9 +139,6 @@ class Sshot(QtGui.QMainWindow):
     connections_list = False
     conn = False
 
-    def log(self, text):
-        print '[%s] %s' % (datetime.today(), text)
-
     def _table_double_click(self, clicked_object):
         row = clicked_object.row()
         host = self.connections_list.item(row, 2).text()
@@ -145,7 +146,7 @@ class Sshot(QtGui.QMainWindow):
         password = self.connections_list.item(row, 4).text()
         port = self.connections_list.item(row, 5).text()
         port = port or '22'
-        self.log('Connect to %s with user %s' % (host, user))
+        log('Connect to %s with user %s' % (host, user))
         complete_host = '%s@%s' % (user, host)
         args = ['xterm', '-e', 'sshpass', '-p', password,
                 'ssh', complete_host, '-p', port]
@@ -167,7 +168,7 @@ class Sshot(QtGui.QMainWindow):
             selected_row = model_index.row()
             id = self.connections_list.item(selected_row, 0).text()
             if id:
-                self.log('Delete connection with id %s' % (id))
+                log('Delete connection with id %s' % (id))
                 cr.execute(query % (id))
                 self.conn.commit()
         self.draw_table(cr)
@@ -191,10 +192,11 @@ class Sshot(QtGui.QMainWindow):
         connections_list.horizontalHeader().setResizeMode(
             QtGui.QHeaderView.Stretch)
         self.setCentralWidget(connections_list)
-        self.log('Founded %s records' % str(len(rows)))
+        log('Founded %s records' % str(len(rows)))
         # ----- Create header for TableView
         connections_list.setHorizontalHeaderLabels(
             connections_list_columns)
+        connections_list.horizontalHeader().setClickable(False)
         # ----- Fill TableWidget with db datas
         row_count = 0
         for row in rows:
@@ -210,21 +212,21 @@ class Sshot(QtGui.QMainWindow):
 
     def __init__(self):
         # ----- Environment
-        self.log('Prepare environment...')
+        log('Prepare environment...')
         prepare_environment()
-        self.log('Environment is ready!')
+        log('Environment is ready!')
         # ----- DB
-        self.log('Open connection for db')
+        log('Open connection for db')
         self.conn = sqlite3.connect('%s%s%s' % (base_path,
                                                 sep,
                                                 'sshot.db'))
-        self.log('Init connection cursor')
+        log('Init connection cursor')
         cr = self.conn.cursor()
         init_db(self.conn, cr)
         # ----- Window
         QtGui.QMainWindow.__init__(self)
         self.setFocusPolicy(QtCore.Qt.StrongFocus)
-        self.resize(600, 400)
+        self.resize(700, 500)
         self.setWindowTitle('SSHot')
         self.statusBar().showMessage('SSHot: A Software To Rule Them All!')
         # ----- Toolbar and relative buttons

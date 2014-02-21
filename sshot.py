@@ -32,20 +32,24 @@ from os import mkdir, sep
 import subprocess
 
 connections_list_columns = ['ID', 'Name', 'Host', 'User',
-                            'Password', 'Port']
-connection_list_field = 'id, name, host, user, password, port'
+                            'Password', 'Port', 'Last Connection']
+connection_list_field = 'id, name, host, user, password, port, last_connection'
 user_home = expanduser('~')
 base_path = '%s%s%s' % (user_home, sep, '.sshot')
 
 
 def log(text):
+
     print '[%s] %s' % (datetime.today(), text)
+
 
 def init_db(conn, cr):
 
-    sql = 'create table if not exists connection'
-    sql = '%s (id integer primary key default null,' % (sql)
-    sql = '%sname str, user str, password str, host str, port str)' % (sql)
+    # ----- CREATE TABLE IF NOT EXIST
+    sql = 'CREATE TABLE IF NOT EXISTS connection'
+    sql = '%s (id integer primary key default null, ' % (sql)
+    sql = '%sname str, user str, password str, host str, ' % (sql)
+    sql = '%sport str, last_connection str)' % (sql)
     cr.execute(sql)
     conn.commit()
     return True
@@ -80,8 +84,8 @@ class InsertForm(QtGui.QMainWindow):
             query = "%s'%s'," % (query, host)
             query = "%s'%s'," % (query, user)
             query = "%s'%s'," % (query, password)
-            query = "%s'%s'" % (query, port)
-            query = '%s)' % query
+            query = "%s'%s'," % (query, port)
+            query = "%s'')" % query
             cr = self.conn.cursor()
             cr.execute(query)
             self.conn.commit()
@@ -141,37 +145,49 @@ class Sshot(QtGui.QMainWindow):
 
     def _table_double_click(self, clicked_object):
         row = clicked_object.row()
+        id = self.connections_list.item(row, 0).text()
         host = self.connections_list.item(row, 2).text()
         user = self.connections_list.item(row, 3).text()
         password = self.connections_list.item(row, 4).text()
-        port = self.connections_list.item(row, 5).text()
-        port = port or '22'
+        port = self.connections_list.item(row, 5).text() or '22'
         log('Connect to %s with user %s' % (host, user))
         complete_host = '%s@%s' % (user, host)
         args = ['xterm', '-e', 'sshpass', '-p', password,
                 'ssh', complete_host, '-p', port]
         subprocess.Popen(args)
+        print id, datetime.today()
+        query = 'UPDATE connection SET last_connection = "%s" where id = %s'
+        query = query % (datetime.today(), id)
+        cr = self.conn.cursor()
+        cr.execute(query)
+        self.conn.commit()
 
     def _click_insert(self):
         self.insert_form = InsertForm(self)
         self.insert_form.show()
 
     def _click_delete(self):
-        select_model = self.connections_list.selectionModel()
-        if not select_model.selectedRows():
-            QtGui.QMessageBox.warning(
-                self, 'Error', "Select a record from the table to delete it",
-                "Continue")
-        cr = self.conn.cursor()
-        query = 'delete from connection where id = %s'
-        for model_index in select_model.selectedRows():
-            selected_row = model_index.row()
-            id = self.connections_list.item(selected_row, 0).text()
-            if id:
-                log('Delete connection with id %s' % (id))
-                cr.execute(query % (id))
-                self.conn.commit()
-        self.draw_table(cr)
+        reply = QtGui.QMessageBox.question(self, 'Delete Records',
+                                           "Are you sure?",
+                                           QtGui.QMessageBox.Yes,
+                                           QtGui.QMessageBox.No)
+        if reply == QtGui.QMessageBox.Yes:
+            select_model = self.connections_list.selectionModel()
+            if not select_model.selectedRows():
+                QtGui.QMessageBox.warning(
+                    self, 'Error',
+                    "Select a record from the table to delete it",
+                    "Continue")
+            cr = self.conn.cursor()
+            query = 'delete from connection where id = %s'
+            for model_index in select_model.selectedRows():
+                selected_row = model_index.row()
+                id = self.connections_list.item(selected_row, 0).text()
+                if id:
+                    log('Delete connection with id %s' % (id))
+                    cr.execute(query % (id))
+                    self.conn.commit()
+            self.draw_table(cr)
 
     def _click_refresh(self):
         cr = self.conn.cursor()
@@ -179,7 +195,7 @@ class Sshot(QtGui.QMainWindow):
 
     def draw_table(self, cr):
         # ----- Extract and show all the connections in the db
-        query = 'SELECT %s FROM connection ORDER BY NAME'
+        query = 'SELECT %s FROM connection ORDER BY NAME ASC'
         query = query % (connection_list_field)
         rows = cr.execute(query)
         rows = rows.fetchall()
@@ -201,7 +217,7 @@ class Sshot(QtGui.QMainWindow):
         row_count = 0
         for row in rows:
             for field in range(len(row)):
-                item = QtGui.QTableWidgetItem(str(row[field]))
+                item = QtGui.QTableWidgetItem(str(row[field] or ''))
                 # ----- The rows are only selectable and not editable
                 item.setFlags(
                     QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled)

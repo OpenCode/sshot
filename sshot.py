@@ -178,20 +178,45 @@ class Sshot(QtGui.QMainWindow):
                     self, 'Error',
                     "Select a record from the table to delete it",
                     "Continue")
-            cr = self.conn.cursor()
-            query = 'delete from connection where id = %s'
-            for model_index in select_model.selectedRows():
-                selected_row = model_index.row()
-                id = self.connections_list.item(selected_row, 0).text()
-                if id:
-                    log('Delete connection with id %s' % (id))
-                    cr.execute(query % (id))
-                    self.conn.commit()
-            self.draw_table(cr)
+            else:
+                cr = self.conn.cursor()
+                query = 'delete from connection where id = %s'
+                for model_index in select_model.selectedRows():
+                    selected_row = model_index.row()
+                    id = self.connections_list.item(selected_row, 0).text()
+                    if id:
+                        log('Delete connection with id %s' % (id))
+                        cr.execute(query % (id))
+                        self.conn.commit()
+                self.draw_table(cr)
 
     def _click_refresh(self):
         cr = self.conn.cursor()
         self.draw_table(cr)
+
+    def _click_show_password(self):
+        select_model = self.connections_list.selectionModel()
+        if not select_model.selectedRows():
+            QtGui.QMessageBox.warning(
+                self, 'Error',
+                "Select a record from the table to read password",
+                "Continue")
+        else:
+            cr = self.conn.cursor()
+            query = 'SELECT name, password FROM connection WHERE id = %s'
+            passwords = ''
+            for model_index in select_model.selectedRows():
+                selected_row = model_index.row()
+                id = self.connections_list.item(selected_row, 0).text()
+                if id:
+                    rows = cr.execute(query % (id))
+                    rows = rows.fetchall()
+                    for row in rows:
+                        passwords = '[%s] %s\n%s' % (row[0], row[1],
+                                                     passwords)
+            if passwords:
+                QtGui.QMessageBox.information(self, 'Password',
+                                              passwords)
 
     def draw_table(self, cr):
         # ----- Extract and show all the connections in the db
@@ -204,6 +229,8 @@ class Sshot(QtGui.QMainWindow):
         connections_list.doubleClicked.connect(self._table_double_click)
         connections_list.setSelectionBehavior(
             QtGui.QAbstractItemView.SelectRows)
+        connections_list.hideColumn(0)  # hide id column
+        connections_list.hideColumn(4)  # hide id column
         # ----- Adapt TableView Columns width to content
         connections_list.horizontalHeader().setResizeMode(
             QtGui.QHeaderView.Stretch)
@@ -250,28 +277,36 @@ class Sshot(QtGui.QMainWindow):
         button_quit = QtGui.QAction(QtGui.QIcon("icons/close.png"),
                                     "Quit", self)
         button_quit.setShortcut("Ctrl+Q")
-        button_quit.setStatusTip("Quit application")
+        button_quit.setStatusTip("Exit from application")
         self.connect(button_quit, QtCore.SIGNAL('triggered()'),
                      QtCore.SLOT('close()'))
         toolbar.addAction(button_quit)
         button_delete = QtGui.QAction(
             QtGui.QIcon("icons/delete.png"), "Delete", self)
         button_delete.setShortcut("Ctrl+D")
-        button_delete.setStatusTip("Delete Connection")
+        button_delete.setStatusTip("Delete one or more connections from the table")
         self.connect(button_delete, QtCore.SIGNAL('triggered()'),
                      self._click_delete)
         toolbar.addAction(button_delete)
         button_insert = QtGui.QAction(
             QtGui.QIcon("icons/add.png"), "Insert", self)
         button_insert.setShortcut("Ctrl+I")
-        button_insert.setStatusTip("Insert Connection")
+        button_insert.setStatusTip("Insert a new connection")
         self.connect(button_insert, QtCore.SIGNAL('triggered()'),
                      self._click_insert)
         toolbar.addAction(button_insert)
+        button_show_password = QtGui.QAction(
+            QtGui.QIcon("icons/show_password.png"), "Show Password",
+            self)
+        button_show_password.setShortcut("Ctrl+P")
+        button_show_password.setStatusTip("Show password for selected record in the table")
+        self.connect(button_show_password, QtCore.SIGNAL('triggered()'),
+                     self._click_show_password)
+        toolbar.addAction(button_show_password)
         button_refresh = QtGui.QAction(
             QtGui.QIcon("icons/refresh.png"), "Refresh", self)
         button_refresh.setShortcut("F5")
-        button_refresh.setStatusTip("Refresh Table")
+        button_refresh.setStatusTip("Refresh the table to see new information")
         self.connect(button_refresh, QtCore.SIGNAL('triggered()'),
                      self._click_refresh)
         toolbar.addAction(button_refresh)

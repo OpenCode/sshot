@@ -152,14 +152,15 @@ class Sshot(QtGui.QMainWindow):
     def _table_double_click(self, clicked_object):
         row = clicked_object.row()
         id = self.connections_list.item(row, 0).text()
+        name = self.connections_list.item(row, 1).text()
         host = self.connections_list.item(row, 2).text()
         user = self.connections_list.item(row, 3).text()
         password = self.connections_list.item(row, 4).text()
         port = self.connections_list.item(row, 5).text() or '22'
         log('Connect to %s with user %s' % (host, user))
         complete_host = '%s@%s' % (user, host)
-        args = ['xterm', '-e', 'sshpass', '-p', password,
-                'ssh', complete_host, '-p', port]
+        args = ['xterm', '-title', name, '-e', 'sshpass',
+                '-p', password, 'ssh', complete_host, '-p', port]
         subprocess.Popen(args)
         print id, datetime.today()
         query = 'UPDATE connection SET last_connection = "%s" where id = %s'

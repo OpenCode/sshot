@@ -33,7 +33,7 @@ import subprocess
 
 
 __NAME__ = 'SSHot'
-__VERSIONE__ = '0.1.0'
+__VERSION__ = '0.1.0'
 __AUTHOR__ = 'Francesco OpenCode Apruzzese <opencode@e-ware.org>'
 __WEBSITE__ = 'www.e-ware.org'
 
@@ -96,7 +96,7 @@ class InsertForm(QtGui.QMainWindow):
             cr.execute(query)
             self.conn.commit()
             log("Connection %s created!" % (name))
-            self.MainWindow.draw_table(cr)
+            self.MainWindow.draw_table(cr, self.MainWindow.main_grid)
             self.close()
 
     def __init__(self, MainWindow):
@@ -148,6 +148,8 @@ class Sshot(QtGui.QMainWindow):
 
     connections_list = False
     conn = False
+    tabs = False
+    main_grid = False
 
     def _table_double_click(self, clicked_object):
         row = clicked_object.row()
@@ -159,10 +161,18 @@ class Sshot(QtGui.QMainWindow):
         port = self.connections_list.item(row, 5).text() or '22'
         log('Connect to %s with user %s' % (host, user))
         complete_host = '%s@%s' % (user, host)
-        args = ['xterm', '-title', name, '-e', 'sshpass',
-                '-p', password, 'ssh', complete_host, '-p', port]
-        subprocess.Popen(args)
-        print id, datetime.today()
+        # ----- Create Space to embed terminal
+        new_tab = QtGui.QWidget()
+        embedWidget = QtGui.QWidget()
+        grid = QtGui.QGridLayout(new_tab)
+        new_tab.setLayout(grid)
+        grid.addWidget(embedWidget, 0, 0)
+        embedder_id = str(embedWidget.winId())
+        self.tabs.addTab(new_tab, name)
+        args = ['xterm', '-title', name, '-into', embedder_id ,
+                '-maximized', '-e', 'sshpass', '-p', password,
+                'ssh', complete_host, '-p', port]
+        process = subprocess.Popen(args)
         query = 'UPDATE connection SET last_connection = "%s" where id = %s'
         query = query % (datetime.today(), id)
         cr = self.conn.cursor()
@@ -195,11 +205,18 @@ class Sshot(QtGui.QMainWindow):
                         log('Delete connection with id %s' % (id))
                         cr.execute(query % (id))
                         self.conn.commit()
-                self.draw_table(cr)
+                self.draw_table(cr, self.main_grid)
 
     def _click_refresh(self):
         cr = self.conn.cursor()
-        self.draw_table(cr)
+        self.draw_table(cr, self.main_grid)
+
+    def _click_info(self):
+        infos = '%s\n' % (__NAME__)
+        infos = '%sVersion: %s\n' % (infos, __VERSION__)
+        infos = '%sAuthor: %s\n' % (infos, __AUTHOR__)
+        infos = '%sWebsite: %s\n' % (infos, __WEBSITE__)
+        QtGui.QMessageBox.information(self, 'Info', infos)
 
     def _click_show_password(self):
         select_model = self.connections_list.selectionModel()
@@ -225,14 +242,16 @@ class Sshot(QtGui.QMainWindow):
                 QtGui.QMessageBox.information(self, 'Password',
                                               passwords)
 
-    def draw_table(self, cr):
+    def draw_table(self, cr, main_grid):
         # ----- Extract and show all the connections in the db
         query = 'SELECT %s FROM connection ORDER BY NAME ASC'
         query = query % (connection_list_field)
         rows = cr.execute(query)
         rows = rows.fetchall()
+        # ----- Graphical settings
         connections_list = QtGui.QTableWidget(
             len(rows), len(connections_list_columns))
+        main_grid.addWidget(connections_list, 0, 0)
         connections_list.doubleClicked.connect(self._table_double_click)
         connections_list.setSelectionBehavior(
             QtGui.QAbstractItemView.SelectRows)
@@ -241,7 +260,7 @@ class Sshot(QtGui.QMainWindow):
         # ----- Adapt TableView Columns width to content
         connections_list.horizontalHeader().setResizeMode(
             QtGui.QHeaderView.Stretch)
-        self.setCentralWidget(connections_list)
+        #self.setCentralWidget(connections_list)
         log('Founded %s records' % str(len(rows)))
         # ----- Create header for TableView
         connections_list.setHorizontalHeaderLabels(
@@ -276,7 +295,8 @@ class Sshot(QtGui.QMainWindow):
         # ----- Window
         QtGui.QMainWindow.__init__(self)
         self.setFocusPolicy(QtCore.Qt.StrongFocus)
-        self.resize(700, 500)
+        self.resize(900, 600)
+        #self.setWindowState(QtCore.Qt.WindowMaximized)
         self.setWindowTitle('SSHot')
         self.statusBar().showMessage('SSHot: A Software To Rule Them All!')
         # ----- Toolbar and relative buttons
@@ -288,6 +308,7 @@ class Sshot(QtGui.QMainWindow):
         self.connect(button_quit, QtCore.SIGNAL('triggered()'),
                      QtCore.SLOT('close()'))
         toolbar.addAction(button_quit)
+        toolbar.addSeparator()
         button_delete = QtGui.QAction(
             QtGui.QIcon("icons/delete.png"), "Delete", self)
         button_delete.setShortcut("Ctrl+D")
@@ -302,6 +323,7 @@ class Sshot(QtGui.QMainWindow):
         self.connect(button_insert, QtCore.SIGNAL('triggered()'),
                      self._click_insert)
         toolbar.addAction(button_insert)
+        toolbar.addSeparator()
         button_show_password = QtGui.QAction(
             QtGui.QIcon("icons/show_password.png"), "Show Password",
             self)
@@ -317,8 +339,25 @@ class Sshot(QtGui.QMainWindow):
         self.connect(button_refresh, QtCore.SIGNAL('triggered()'),
                      self._click_refresh)
         toolbar.addAction(button_refresh)
+        toolbar.addSeparator()
+        button_info = QtGui.QAction(
+            QtGui.QIcon("icons/info.png"), "Info", self)
+        button_info.setShortcut("Ctrl+?")
+        button_info.setStatusTip("Show information about software")
+        self.connect(button_info, QtCore.SIGNAL('triggered()'),
+                     self._click_info)
+        toolbar.addAction(button_info)
         # ----- Draw the main table
-        self.draw_table(cr)
+        tabs = QtGui.QTabWidget()
+        #tabs.setTabsClosable(True)
+        self.tabs = tabs
+        main_tab = QtGui.QWidget()
+        main_grid = QtGui.QGridLayout(main_tab)
+        main_tab.setLayout(main_grid)
+        self.main_grid = main_grid
+        tabs.addTab(main_tab, 'Connection')
+        self.setCentralWidget(tabs)
+        self.draw_table(cr, main_grid)
 
 
 if __name__ == "__main__":

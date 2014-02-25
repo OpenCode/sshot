@@ -36,7 +36,7 @@ __NAME__ = 'SSHot'
 __VERSION__ = '0.2.0'
 __AUTHOR__ = 'Francesco OpenCode Apruzzese <opencode@e-ware.org>'
 __WEBSITE__ = 'www.e-ware.org'
-__PROJECT_WEBSITE__ = 'https://github.com/OpenCode/sshot'
+__PROJECT_WEBSITE__ = 'http://opencode.github.io/sshot/'
 
 connections_list_columns = ['ID', 'Name', 'Host', 'User',
                             'Password', 'Port', 'Last Connection']
@@ -120,7 +120,8 @@ class Config():
     def set_value(self, key, value):
         if self.FIELDS[key][0] == 'boolean':
             value = value and 'True' or 'False'
-        sql = 'UPDATE setting SET value = "%s" WHERE key = "%s"' % (value, key)
+        sql = 'UPDATE setting SET value = "%s" WHERE key = "%s"' % (
+            value, key)
         self.cr.execute(sql)
         self.conn.commit()
         return True
@@ -155,11 +156,14 @@ class ConfigForm(QtGui.QMainWindow):
 
         grid = QtGui.QGridLayout(cWidget)
 
-        lbl_use_external_terminal = QtGui.QLabel("Use External Terminal Emulator")
+        lbl_use_external_terminal = QtGui.QLabel(
+            "Use External Terminal Emulator")
         lbl_external_terminal = QtGui.QLabel("External Emulator")
         self.use_external_terminal = QtGui.QCheckBox("")
-        self.use_external_terminal.setChecked(config.get_value('use_external_terminal'))
-        self.external_terminal = QtGui.QLineEdit(config.get_value('external_terminal'))
+        self.use_external_terminal.setChecked(
+            config.get_value('use_external_terminal'))
+        self.external_terminal = QtGui.QLineEdit(
+            config.get_value('external_terminal'))
 
         button_save = QtGui.QPushButton('Save')
         button_save.setFont(QtGui.QFont("Times", 10, QtGui.QFont.Bold))
@@ -191,7 +195,8 @@ class InsertForm(QtGui.QMainWindow):
         port = self.edit_port.text()
         if not (name and host and user and password):
             QtGui.QMessageBox.warning(
-                self, 'Error', "Name, Host, User and Password are required",
+                self, 'Error',
+                "Name, Host, User and Password are required",
                 "Continue")
         else:
             query = 'INSERT INTO connection (%s) VALUES ('

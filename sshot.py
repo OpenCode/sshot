@@ -544,12 +544,15 @@ class Sshot(QtGui.QMainWindow):
         icon = QtGui.QIcon('icons/sshot.png')
         self.systray = QtGui.QSystemTrayIcon(icon)
         menu = QtGui.QMenu()
-        showAction = menu.addAction('Show')
+        ti_show_insert_form = menu.addAction('Insert Connection')
         menu.addSeparator()
-        quitAction = menu.addAction('Quit')
-        QtCore.QObject.connect(quitAction, QtCore.SIGNAL("triggered()"),
+        ti_show_action = menu.addAction('Show')
+        ti_quit_action = menu.addAction('Quit')
+        QtCore.QObject.connect(ti_show_insert_form, QtCore.SIGNAL("triggered()"),
+                               self._click_insert)
+        QtCore.QObject.connect(ti_quit_action, QtCore.SIGNAL("triggered()"),
                                self.close)
-        QtCore.QObject.connect(showAction, QtCore.SIGNAL("triggered()"),
+        QtCore.QObject.connect(ti_show_action, QtCore.SIGNAL("triggered()"),
                                self._show_window)
         self.systray.setContextMenu(menu)
         self.systray.show()

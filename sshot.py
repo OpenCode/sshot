@@ -51,13 +51,34 @@ def log(text):
 
 def init_db(conn, cr):
 
-    # ----- CREATE TABLE IF NOT EXIST
+    # ----- CREATE TABLE connection IF NOT EXIST
     sql = 'CREATE TABLE IF NOT EXISTS connection'
     sql = '%s (id integer primary key default null, ' % (sql)
     sql = '%sname str, user str, password str, host str, ' % (sql)
     sql = '%sport str, last_connection str)' % (sql)
     cr.execute(sql)
     conn.commit()
+    # ----- CREATE TABLE setting IF NOT EXIST
+    sql = 'CREATE TABLE IF NOT EXISTS setting'
+    sql = '%s (id integer primary key default null, ' % (sql)
+    sql = '%skey str, value str)' % (sql)
+    cr.execute(sql)
+    conn.commit()
+    # ----- SET DEFAULT VALUE IN SETTING DB
+    #       use_external_terminal
+    sql = 'SELECT id FROM setting WHERE key = "use_external_terminal"'
+    res = cr.execute(sql)
+    if not res.fetchall():
+        sql = 'INSERT INTO setting (key, value) VALUES ("use_external_terminal", "False")'
+        cr.execute(sql)
+        conn.commit()
+    #       external_terminal
+    sql = 'SELECT id FROM setting WHERE key = "external_terminal"'
+    res = cr.execute(sql)
+    if not res.fetchall():
+        sql = 'INSERT INTO setting (key, value) VALUES ("external_terminal", "")'
+        cr.execute(sql)
+        conn.commit()
     return True
 
 
@@ -66,6 +87,94 @@ def prepare_environment():
     if not isdir(base_path):
         mkdir(base_path)
     return True
+
+
+class Config():
+
+    conn = False
+    cr = False
+
+    FIELDS = {
+        'use_external_terminal': ('boolean', False),
+        'external_terminal': ('string', ''),
+        }
+
+    use_external_terminal = False
+    external_terminal = ''
+
+    def get_value(self, key):
+        sql = 'SELECT value FROM setting WHERE key = "%s"' % (key)
+        res = self.cr.execute(sql)
+        res = res.fetchall()
+        if not res:
+            return self.FIELDS[key][1]
+        res = res[0][0]
+        # ----- Return a Bool value based on integer value in db
+        if self.FIELDS[key][0] == 'boolean':
+            if res == 'True':
+                return True
+            return False
+        return res
+
+    def set_value(self, key, value):
+        if self.FIELDS[key][0] == 'boolean':
+            value = value and 'True' or 'False'
+        sql = 'UPDATE setting SET value = "%s" WHERE key = "%s"' % (value, key)
+        self.cr.execute(sql)
+        self.conn.commit()
+        return True
+
+    def __init__(self):
+        self.conn = sqlite3.connect('%s%s%s' % (base_path,
+                                                sep,
+                                                'sshot.db'))
+        self.cr = self.conn.cursor()
+
+
+class ConfigForm(QtGui.QMainWindow):
+
+    conn = False
+    MainWindow = False
+
+    def _save(self):
+        config = Config()
+        config.set_value('external_terminal',
+                         self.external_terminal.text())
+        config.set_value('use_external_terminal',
+                         self.use_external_terminal.isChecked())
+
+    def __init__(self, MainWindow):
+        self.MainWindow = MainWindow
+        config = Config()
+        # ----- Window
+        QtGui.QMainWindow.__init__(self)
+        self.resize(350, 250)
+        self.setWindowTitle('SSHot - Setting Configuration')
+        cWidget = QtGui.QWidget(self)
+
+        grid = QtGui.QGridLayout(cWidget)
+
+        lbl_use_external_terminal = QtGui.QLabel("Use External Terminal Emulator")
+        lbl_external_terminal = QtGui.QLabel("External Emulator")
+        self.use_external_terminal = QtGui.QCheckBox("")
+        self.use_external_terminal.setChecked(config.get_value('use_external_terminal'))
+        self.external_terminal = QtGui.QLineEdit(config.get_value('external_terminal'))
+
+        button_save = QtGui.QPushButton('Save')
+        button_save.setFont(QtGui.QFont("Times", 10, QtGui.QFont.Bold))
+        self.connect(button_save, QtCore.SIGNAL('clicked()'),
+                     self._save)
+
+        grid.addWidget(lbl_use_external_terminal, 0, 0)
+        grid.addWidget(self.use_external_terminal, 0, 1)
+        grid.addWidget(lbl_external_terminal, 1, 0)
+        grid.addWidget(self.external_terminal, 1, 1)
+        grid.addWidget(button_save, 2, 0)
+
+        cWidget.setLayout(grid)
+        self.setCentralWidget(cWidget)
+
+        config = Config()
 
 
 class InsertForm(QtGui.QMainWindow):
@@ -182,6 +291,10 @@ class Sshot(QtGui.QMainWindow):
     def _click_insert(self):
         self.insert_form = InsertForm(self)
         self.insert_form.show()
+
+    def _click_config(self):
+        self.config_form = ConfigForm(self)
+        self.config_form.show()
 
     def _click_delete(self):
         reply = QtGui.QMessageBox.question(self, 'Delete Records',
@@ -340,6 +453,13 @@ class Sshot(QtGui.QMainWindow):
                      self._click_refresh)
         toolbar.addAction(button_refresh)
         toolbar.addSeparator()
+        button_config = QtGui.QAction(
+            QtGui.QIcon("icons/config.png"), "Config", self)
+        button_config.setShortcut("Ctrl+S")
+        button_config.setStatusTip("Set configuration for the software")
+        self.connect(button_config, QtCore.SIGNAL('triggered()'),
+                     self._click_config)
+        toolbar.addAction(button_config)
         button_info = QtGui.QAction(
             QtGui.QIcon("icons/info.png"), "Info", self)
         button_info.setShortcut("Ctrl+?")

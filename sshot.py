@@ -33,9 +33,10 @@ import subprocess
 
 
 __NAME__ = 'SSHot'
-__VERSION__ = '0.1.0'
+__VERSION__ = '0.2.0'
 __AUTHOR__ = 'Francesco OpenCode Apruzzese <opencode@e-ware.org>'
 __WEBSITE__ = 'www.e-ware.org'
+__PROJECT_WEBSITE__ = 'https://github.com/OpenCode/sshot'
 
 connections_list_columns = ['ID', 'Name', 'Host', 'User',
                             'Password', 'Port', 'Last Connection']
@@ -332,8 +333,17 @@ class Sshot(QtGui.QMainWindow):
         cr = self.conn.cursor()
         self.draw_table(cr, self.main_grid)
 
+    def _click_donate(self):
+        infos = 'If you like %s (and we are sure you like it!!!) plese considere to donate to the project\n' % (__NAME__)
+        infos = '%sOur developer need RedBull to implement new features' % (infos)
+        infos = '%s and so we need money to buy RedBull!\n\nHelp us to feed developer\n\n' % (infos)
+        infos = '%sPAYPAL: cescoap@gmail.com\n\n' % (infos)
+        infos = '%sFLATTR: https://flattr.com/profile/opencode?public=1\n\n' % (infos)
+        QtGui.QMessageBox.information(self, 'Info', infos)
+
     def _click_info(self):
-        infos = '%s\n' % (__NAME__)
+        infos = '%s\n\n' % (__NAME__)
+        infos = '%s%s\n\n' % (infos, __PROJECT_WEBSITE__)
         infos = '%sVersion: %s\n' % (infos, __VERSION__)
         infos = '%sAuthor: %s\n' % (infos, __AUTHOR__)
         infos = '%sWebsite: %s\n' % (infos, __WEBSITE__)
@@ -422,6 +432,7 @@ class Sshot(QtGui.QMainWindow):
         self.statusBar().showMessage('SSHot: A Software To Rule Them All!')
         # ----- Toolbar and relative buttons
         toolbar = self.addToolBar('Buttons')
+        # -- Button Quit
         button_quit = QtGui.QAction(QtGui.QIcon("icons/close.png"),
                                     "Quit", self)
         button_quit.setShortcut("Ctrl+Q")
@@ -429,7 +440,9 @@ class Sshot(QtGui.QMainWindow):
         self.connect(button_quit, QtCore.SIGNAL('triggered()'),
                      QtCore.SLOT('close()'))
         toolbar.addAction(button_quit)
+        # -- Separator
         toolbar.addSeparator()
+        # -- Button Delete
         button_delete = QtGui.QAction(
             QtGui.QIcon("icons/delete.png"), "Delete", self)
         button_delete.setShortcut("Ctrl+D")
@@ -437,6 +450,7 @@ class Sshot(QtGui.QMainWindow):
         self.connect(button_delete, QtCore.SIGNAL('triggered()'),
                      self._click_delete)
         toolbar.addAction(button_delete)
+        # -- Button Insert
         button_insert = QtGui.QAction(
             QtGui.QIcon("icons/add.png"), "Insert", self)
         button_insert.setShortcut("Ctrl+I")
@@ -444,7 +458,9 @@ class Sshot(QtGui.QMainWindow):
         self.connect(button_insert, QtCore.SIGNAL('triggered()'),
                      self._click_insert)
         toolbar.addAction(button_insert)
+        # -- Separator
         toolbar.addSeparator()
+        # -- Button Show Password
         button_show_password = QtGui.QAction(
             QtGui.QIcon("icons/show_password.png"), "Show Password",
             self)
@@ -460,7 +476,9 @@ class Sshot(QtGui.QMainWindow):
         self.connect(button_refresh, QtCore.SIGNAL('triggered()'),
                      self._click_refresh)
         toolbar.addAction(button_refresh)
+        # -- Separator
         toolbar.addSeparator()
+        # -- Button Config
         button_config = QtGui.QAction(
             QtGui.QIcon("icons/config.png"), "Config", self)
         button_config.setShortcut("Ctrl+S")
@@ -468,6 +486,17 @@ class Sshot(QtGui.QMainWindow):
         self.connect(button_config, QtCore.SIGNAL('triggered()'),
                      self._click_config)
         toolbar.addAction(button_config)
+        # -- Separator
+        toolbar.addSeparator()
+        # -- Button Donate
+        button_donate = QtGui.QAction(
+            QtGui.QIcon("icons/donate.png"), "Info", self)
+        button_donate.setShortcut("Ctrl+H")
+        button_donate.setStatusTip("Help the poor developer")
+        self.connect(button_donate, QtCore.SIGNAL('triggered()'),
+                     self._click_donate)
+        toolbar.addAction(button_donate)
+        # -- Button Info
         button_info = QtGui.QAction(
             QtGui.QIcon("icons/info.png"), "Info", self)
         button_info.setShortcut("Ctrl+?")

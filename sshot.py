@@ -270,17 +270,25 @@ class Sshot(QtGui.QMainWindow):
         port = self.connections_list.item(row, 5).text() or '22'
         log('Connect to %s with user %s' % (host, user))
         complete_host = '%s@%s' % (user, host)
-        # ----- Create Space to embed terminal
-        new_tab = QtGui.QWidget()
-        embedWidget = QtGui.QWidget()
-        grid = QtGui.QGridLayout(new_tab)
-        new_tab.setLayout(grid)
-        grid.addWidget(embedWidget, 0, 0)
-        embedder_id = str(embedWidget.winId())
-        self.tabs.addTab(new_tab, name)
-        args = ['xterm', '-title', name, '-into', embedder_id ,
-                '-maximized', '-e', 'sshpass', '-p', password,
-                'ssh', complete_host, '-p', port]
+        config = Config()
+        if not config.get_value('use_external_terminal'):
+            # ----- Create Space to embed terminal
+            new_tab = QtGui.QWidget()
+            embedWidget = QtGui.QWidget()
+            grid = QtGui.QGridLayout(new_tab)
+            new_tab.setLayout(grid)
+            grid.addWidget(embedWidget, 0, 0)
+            embedder_id = str(embedWidget.winId())
+            self.tabs.addTab(new_tab, name)
+            args = ['xterm', '-title', name, '-into', embedder_id,
+                    '-maximized', '-e', 'sshpass', '-p', password,
+                    'ssh', complete_host, '-p', port]
+        else:
+            external_terminal = config.get_value('external_terminal')
+            log('Connect using external terminal %s' % (external_terminal))
+            complete_command = 'sshpass -p %s ssh %s -p %s' % (
+                password, complete_host, port)
+            args = [external_terminal, '-e', complete_command]
         process = subprocess.Popen(args)
         query = 'UPDATE connection SET last_connection = "%s" where id = %s'
         query = query % (datetime.today(), id)

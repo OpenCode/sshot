@@ -521,6 +521,27 @@ class Sshot(QtGui.QMainWindow):
         self.setCentralWidget(tabs)
         self.draw_table(cr, main_grid)
 
+        # ------ TrayIcon
+        icon=QtGui.QIcon('icons/sshot.png')
+        self.systray=QtGui.QSystemTrayIcon(icon)
+        menu = QtGui.QMenu()
+        showAction = menu.addAction('Show')
+        sep1 = menu.addSeparator()
+        quitAction = menu.addAction('Quit')
+        QtCore.QObject.connect(quitAction, QtCore.SIGNAL("triggered()"), self.close)
+        QtCore.QObject.connect(showAction, QtCore.SIGNAL("triggered()"), self._show_window)
+        self.systray.setContextMenu(menu)
+        self.systray.show()
+
+    def closeEvent(self,  ev):
+        if self.isVisible():
+            self.hide()
+            #self.systray.showMessage('SSHot', 'Application in TrayIcon')
+            ev.ignore()
+
+    def _show_window(self):
+        self.show()
+
 
 if __name__ == "__main__":
     app = QtGui.QApplication(sys.argv)

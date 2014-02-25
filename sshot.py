@@ -80,6 +80,13 @@ def init_db(conn, cr):
         sql = 'INSERT INTO setting (key, value) VALUES ("external_terminal", "")'
         cr.execute(sql)
         conn.commit()
+    #       use tray icon
+    sql = 'SELECT id FROM setting WHERE key = "use_tray_icon"'
+    res = cr.execute(sql)
+    if not res.fetchall():
+        sql = 'INSERT INTO setting (key, value) VALUES ("use_tray_icon", "True")'
+        cr.execute(sql)
+        conn.commit()
     return True
 
 
@@ -98,10 +105,12 @@ class Config():
     FIELDS = {
         'use_external_terminal': ('boolean', False),
         'external_terminal': ('string', ''),
+        'use_tray_icon': ('boolean', True),
         }
 
     use_external_terminal = False
     external_terminal = ''
+    use_tray_icon = False
 
     def get_value(self, key):
         sql = 'SELECT value FROM setting WHERE key = "%s"' % (key)
@@ -144,13 +153,15 @@ class ConfigForm(QtGui.QMainWindow):
                          self.external_terminal.text())
         config.set_value('use_external_terminal',
                          self.use_external_terminal.isChecked())
+        config.set_value('use_tray_icon',
+                         self.use_tray_icon.isChecked())
 
     def __init__(self, MainWindow):
         self.MainWindow = MainWindow
         config = Config()
         # ----- Window
         QtGui.QMainWindow.__init__(self)
-        self.resize(350, 250)
+        self.resize(550, 250)
         self.setWindowTitle('SSHot - Setting Configuration')
         cWidget = QtGui.QWidget(self)
 
@@ -159,11 +170,16 @@ class ConfigForm(QtGui.QMainWindow):
         lbl_use_external_terminal = QtGui.QLabel(
             "Use External Terminal Emulator")
         lbl_external_terminal = QtGui.QLabel("External Emulator")
+        lbl_use_tray_icon = QtGui.QLabel(
+            "Reduce Application To Try Icon When you close it")
         self.use_external_terminal = QtGui.QCheckBox("")
         self.use_external_terminal.setChecked(
             config.get_value('use_external_terminal'))
         self.external_terminal = QtGui.QLineEdit(
             config.get_value('external_terminal'))
+        self.use_tray_icon = QtGui.QCheckBox("")
+        self.use_tray_icon.setChecked(
+            config.get_value('use_tray_icon'))
 
         button_save = QtGui.QPushButton('Save')
         button_save.setFont(QtGui.QFont("Times", 10, QtGui.QFont.Bold))
@@ -174,7 +190,9 @@ class ConfigForm(QtGui.QMainWindow):
         grid.addWidget(self.use_external_terminal, 0, 1)
         grid.addWidget(lbl_external_terminal, 1, 0)
         grid.addWidget(self.external_terminal, 1, 1)
-        grid.addWidget(button_save, 2, 0)
+        grid.addWidget(lbl_use_tray_icon, 2, 0)
+        grid.addWidget(self.use_tray_icon, 2, 1)
+        grid.addWidget(button_save, 3, 0)
 
         cWidget.setLayout(grid)
         self.setCentralWidget(cWidget)
@@ -295,7 +313,7 @@ class Sshot(QtGui.QMainWindow):
             complete_command = 'sshpass -p %s ssh %s -p %s' % (
                 password, complete_host, port)
             args = [external_terminal, '-e', complete_command]
-        process = subprocess.Popen(args)
+        subprocess.Popen(args)
         query = 'UPDATE connection SET last_connection = "%s" where id = %s'
         query = query % (datetime.today(), id)
         cr = self.conn.cursor()
@@ -451,7 +469,8 @@ class Sshot(QtGui.QMainWindow):
         button_delete = QtGui.QAction(
             QtGui.QIcon("icons/delete.png"), "Delete", self)
         button_delete.setShortcut("Ctrl+D")
-        button_delete.setStatusTip("Delete one or more connections from the table")
+        button_delete.setStatusTip(
+            "Delete one or more connections from the table")
         self.connect(button_delete, QtCore.SIGNAL('triggered()'),
                      self._click_delete)
         toolbar.addAction(button_delete)
@@ -470,7 +489,8 @@ class Sshot(QtGui.QMainWindow):
             QtGui.QIcon("icons/show_password.png"), "Show Password",
             self)
         button_show_password.setShortcut("Ctrl+P")
-        button_show_password.setStatusTip("Show password for selected record in the table")
+        button_show_password.setStatusTip(
+            "Show password for selected record in the table")
         self.connect(button_show_password, QtCore.SIGNAL('triggered()'),
                      self._click_show_password)
         toolbar.addAction(button_show_password)
@@ -520,21 +540,23 @@ class Sshot(QtGui.QMainWindow):
         tabs.addTab(main_tab, 'Connection')
         self.setCentralWidget(tabs)
         self.draw_table(cr, main_grid)
-
         # ------ TrayIcon
-        icon=QtGui.QIcon('icons/sshot.png')
-        self.systray=QtGui.QSystemTrayIcon(icon)
+        icon = QtGui.QIcon('icons/sshot.png')
+        self.systray = QtGui.QSystemTrayIcon(icon)
         menu = QtGui.QMenu()
         showAction = menu.addAction('Show')
-        sep1 = menu.addSeparator()
+        menu.addSeparator()
         quitAction = menu.addAction('Quit')
-        QtCore.QObject.connect(quitAction, QtCore.SIGNAL("triggered()"), self.close)
-        QtCore.QObject.connect(showAction, QtCore.SIGNAL("triggered()"), self._show_window)
+        QtCore.QObject.connect(quitAction, QtCore.SIGNAL("triggered()"),
+                               self.close)
+        QtCore.QObject.connect(showAction, QtCore.SIGNAL("triggered()"),
+                               self._show_window)
         self.systray.setContextMenu(menu)
         self.systray.show()
 
     def closeEvent(self,  ev):
-        if self.isVisible():
+        config = Config()
+        if config.get_value('use_tray_icon') and self.isVisible():
             self.hide()
             #self.systray.showMessage('SSHot', 'Application in TrayIcon')
             ev.ignore()

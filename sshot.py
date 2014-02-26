@@ -28,7 +28,7 @@ from PyQt4 import QtGui, QtCore
 from datetime import datetime
 import sqlite3
 from os.path import expanduser, isdir
-from os import mkdir, sep
+from os import mkdir, sep, path
 import subprocess
 
 
@@ -43,6 +43,7 @@ connections_list_columns = ['ID', 'Name', 'Host', 'User',
 connection_list_field = 'id, name, host, user, password, port, last_connection'
 user_home = expanduser('~')
 base_path = '%s%s%s' % (user_home, sep, '.sshot')
+project_path = path.dirname(path.realpath(__file__))
 
 
 def log(text):
@@ -456,7 +457,7 @@ class Sshot(QtGui.QMainWindow):
         # ----- Toolbar and relative buttons
         toolbar = self.addToolBar('Buttons')
         # -- Button Quit
-        button_quit = QtGui.QAction(QtGui.QIcon("icons/close.png"),
+        button_quit = QtGui.QAction(QtGui.QIcon("%s/icons/close.png" % (project_path)),
                                     "Quit", self)
         button_quit.setShortcut("Ctrl+Q")
         button_quit.setStatusTip("Exit from application")
@@ -467,7 +468,7 @@ class Sshot(QtGui.QMainWindow):
         toolbar.addSeparator()
         # -- Button Delete
         button_delete = QtGui.QAction(
-            QtGui.QIcon("icons/delete.png"), "Delete", self)
+            QtGui.QIcon("%s/icons/delete.png" % (project_path)), "Delete", self)
         button_delete.setShortcut("Ctrl+D")
         button_delete.setStatusTip(
             "Delete one or more connections from the table")
@@ -476,7 +477,7 @@ class Sshot(QtGui.QMainWindow):
         toolbar.addAction(button_delete)
         # -- Button Insert
         button_insert = QtGui.QAction(
-            QtGui.QIcon("icons/add.png"), "Insert", self)
+            QtGui.QIcon("%s/icons/add.png" % (project_path)), "Insert", self)
         button_insert.setShortcut("Ctrl+I")
         button_insert.setStatusTip("Insert a new connection")
         self.connect(button_insert, QtCore.SIGNAL('triggered()'),
@@ -486,7 +487,7 @@ class Sshot(QtGui.QMainWindow):
         toolbar.addSeparator()
         # -- Button Show Password
         button_show_password = QtGui.QAction(
-            QtGui.QIcon("icons/show_password.png"), "Show Password",
+            QtGui.QIcon("%s/icons/show_password.png" % (project_path)), "Show Password",
             self)
         button_show_password.setShortcut("Ctrl+P")
         button_show_password.setStatusTip(
@@ -495,7 +496,7 @@ class Sshot(QtGui.QMainWindow):
                      self._click_show_password)
         toolbar.addAction(button_show_password)
         button_refresh = QtGui.QAction(
-            QtGui.QIcon("icons/refresh.png"), "Refresh", self)
+            QtGui.QIcon("%s/icons/refresh.png" % (project_path)), "Refresh", self)
         button_refresh.setShortcut("F5")
         button_refresh.setStatusTip("Refresh the table to see new information")
         self.connect(button_refresh, QtCore.SIGNAL('triggered()'),
@@ -505,7 +506,7 @@ class Sshot(QtGui.QMainWindow):
         toolbar.addSeparator()
         # -- Button Config
         button_config = QtGui.QAction(
-            QtGui.QIcon("icons/config.png"), "Config", self)
+            QtGui.QIcon("%s/icons/config.png" % (project_path)), "Config", self)
         button_config.setShortcut("Ctrl+S")
         button_config.setStatusTip("Set configuration for the software")
         self.connect(button_config, QtCore.SIGNAL('triggered()'),
@@ -515,7 +516,7 @@ class Sshot(QtGui.QMainWindow):
         toolbar.addSeparator()
         # -- Button Donate
         button_donate = QtGui.QAction(
-            QtGui.QIcon("icons/donate.png"), "Info", self)
+            QtGui.QIcon("%s/icons/donate.png" % (project_path)), "Info", self)
         button_donate.setShortcut("Ctrl+H")
         button_donate.setStatusTip("Help the poor developer")
         self.connect(button_donate, QtCore.SIGNAL('triggered()'),
@@ -523,7 +524,7 @@ class Sshot(QtGui.QMainWindow):
         toolbar.addAction(button_donate)
         # -- Button Info
         button_info = QtGui.QAction(
-            QtGui.QIcon("icons/info.png"), "Info", self)
+            QtGui.QIcon("%s/icons/info.png" % (project_path)), "Info", self)
         button_info.setShortcut("Ctrl+?")
         button_info.setStatusTip("Show information about software")
         self.connect(button_info, QtCore.SIGNAL('triggered()'),
@@ -541,7 +542,7 @@ class Sshot(QtGui.QMainWindow):
         self.setCentralWidget(tabs)
         self.draw_table(cr, main_grid)
         # ------ TrayIcon
-        icon = QtGui.QIcon('icons/sshot.png')
+        icon = QtGui.QIcon('%s/icons/sshot.png' % (project_path))
         self.systray = QtGui.QSystemTrayIcon(icon)
         menu = QtGui.QMenu()
         ti_show_insert_form = menu.addAction('Insert Connection')
@@ -556,6 +557,7 @@ class Sshot(QtGui.QMainWindow):
                                self._show_window)
         self.systray.setContextMenu(menu)
         self.systray.show()
+        print project_path
 
     def closeEvent(self,  ev):
         config = Config()

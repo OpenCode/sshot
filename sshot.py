@@ -321,6 +321,13 @@ class Sshot(QtGui.QMainWindow):
         cr.execute(query)
         self.conn.commit()
 
+    def _close_tab(self, tab_index):
+        if tab_index:
+            current_tab = self.tabs.widget(tab_index)
+            for widget_child in current_tab.findChildren(QtGui.QWidget):
+                widget_child.destroy(destroySubWindows=True)
+            self.tabs.removeTab(tab_index)
+
     def _click_insert(self):
         self.insert_form = InsertForm(self)
         self.insert_form.show()
@@ -415,7 +422,6 @@ class Sshot(QtGui.QMainWindow):
         # ----- Adapt TableView Columns width to content
         connections_list.horizontalHeader().setResizeMode(
             QtGui.QHeaderView.Stretch)
-        #self.setCentralWidget(connections_list)
         log('Founded %s records' % str(len(rows)))
         # ----- Create header for TableView
         connections_list.setHorizontalHeaderLabels(
@@ -530,9 +536,10 @@ class Sshot(QtGui.QMainWindow):
         self.connect(button_info, QtCore.SIGNAL('triggered()'),
                      self._click_info)
         toolbar.addAction(button_info)
-        # ----- Draw the main table
+        # ----- Content creation
         tabs = QtGui.QTabWidget()
-        #tabs.setTabsClosable(True)
+        tabs.setTabsClosable(True)
+        QtCore.QObject.connect(tabs, QtCore.SIGNAL('tabCloseRequested(int)'), self._close_tab)
         self.tabs = tabs
         main_tab = QtGui.QWidget()
         main_grid = QtGui.QGridLayout(main_tab)
@@ -540,6 +547,7 @@ class Sshot(QtGui.QMainWindow):
         self.main_grid = main_grid
         tabs.addTab(main_tab, 'Connection')
         self.setCentralWidget(tabs)
+        # ----- Draw the main table
         self.draw_table(cr, main_grid)
         # ------ TrayIcon
         icon = QtGui.QIcon('%s/icons/sshot.png' % (project_path))
@@ -557,7 +565,6 @@ class Sshot(QtGui.QMainWindow):
                                self._show_window)
         self.systray.setContextMenu(menu)
         self.systray.show()
-        print project_path
 
     def closeEvent(self,  ev):
         config = Config()

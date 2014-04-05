@@ -66,6 +66,12 @@ def init_db(conn, cr):
     sql = '%skey str, value str)' % (sql)
     cr.execute(sql)
     conn.commit()
+    # ----- CREATE TABLE history IF NOT EXIST
+    sql = 'CREATE TABLE IF NOT EXISTS history'
+    sql = '%s (id integer primary key default null, ' % (sql)
+    sql = '%sconnection_id integer, date str)' % (sql)
+    cr.execute(sql)
+    conn.commit()
     # ----- SET DEFAULT VALUE IN SETTING DB
     #       use_external_terminal
     sql = 'SELECT id FROM setting WHERE key = "use_external_terminal"'
@@ -299,15 +305,17 @@ class Sshot(QtGui.QMainWindow):
         if not config.get_value('use_external_terminal'):
             # ----- Create Space to embed terminal
             new_tab = QtGui.QWidget()
-            embedWidget = QtGui.QWidget()
+            #embedWidget = QtGui.QWidget()
+            embedWidget = QtGui.QX11EmbedWidget()
             grid = QtGui.QGridLayout(new_tab)
             new_tab.setLayout(grid)
             grid.addWidget(embedWidget, 0, 0)
             embedder_id = str(embedWidget.winId())
             self.tabs.addTab(new_tab, name)
+            complete_command = 'sshpass -p %s ssh %s -p %s; bash' % (
+                password, complete_host, port)
             args = ['xterm', '-title', name, '-into', embedder_id,
-                    '-maximized', '-e', 'sshpass', '-p', password,
-                    'ssh', complete_host, '-p', port]
+                    '-maximized', '-e', complete_command]
         else:
             external_terminal = config.get_value('external_terminal')
             log('Connect using external terminal %s' % (external_terminal))
@@ -315,9 +323,13 @@ class Sshot(QtGui.QMainWindow):
                 password, complete_host, port)
             args = [external_terminal, '-e', complete_command]
         subprocess.Popen(args)
+        cr = self.conn.cursor()
         query = 'UPDATE connection SET last_connection = "%s" where id = %s'
         query = query % (datetime.today(), id)
-        cr = self.conn.cursor()
+        cr.execute(query)
+        # ----- Save connection in history
+        query = "INSERT INTO history (connection_id, date) VALUES (%s, '%s')"
+        query = query % (id, datetime.today())
         cr.execute(query)
         self.conn.commit()
 
@@ -459,12 +471,14 @@ class Sshot(QtGui.QMainWindow):
         self.resize(900, 600)
         #self.setWindowState(QtCore.Qt.WindowMaximized)
         self.setWindowTitle('SSHot')
-        self.statusBar().showMessage('SSHot: A Software To Rule Them All!')
+        self.statusBar().showMessage(
+            'SSHot: A Software To Rule Them All!')
         # ----- Toolbar and relative buttons
         toolbar = self.addToolBar('Buttons')
         # -- Button Quit
-        button_quit = QtGui.QAction(QtGui.QIcon("%s/icons/close.png" % (project_path)),
-                                    "Quit", self)
+        button_quit = QtGui.QAction(
+            QtGui.QIcon("%s/icons/close.png" % (project_path)),
+            "Quit", self)
         button_quit.setShortcut("Ctrl+Q")
         button_quit.setStatusTip("Exit from application")
         self.connect(button_quit, QtCore.SIGNAL('triggered()'),
@@ -474,7 +488,8 @@ class Sshot(QtGui.QMainWindow):
         toolbar.addSeparator()
         # -- Button Delete
         button_delete = QtGui.QAction(
-            QtGui.QIcon("%s/icons/delete.png" % (project_path)), "Delete", self)
+            QtGui.QIcon("%s/icons/delete.png" % (project_path)),
+                        "Delete", self)
         button_delete.setShortcut("Ctrl+D")
         button_delete.setStatusTip(
             "Delete one or more connections from the table")
@@ -483,7 +498,8 @@ class Sshot(QtGui.QMainWindow):
         toolbar.addAction(button_delete)
         # -- Button Insert
         button_insert = QtGui.QAction(
-            QtGui.QIcon("%s/icons/add.png" % (project_path)), "Insert", self)
+            QtGui.QIcon("%s/icons/add.png" % (project_path)), "Insert",
+                        self)
         button_insert.setShortcut("Ctrl+I")
         button_insert.setStatusTip("Insert a new connection")
         self.connect(button_insert, QtCore.SIGNAL('triggered()'),
@@ -493,8 +509,8 @@ class Sshot(QtGui.QMainWindow):
         toolbar.addSeparator()
         # -- Button Show Password
         button_show_password = QtGui.QAction(
-            QtGui.QIcon("%s/icons/show_password.png" % (project_path)), "Show Password",
-            self)
+            QtGui.QIcon("%s/icons/show_password.png" % (project_path)),
+            "Show Password", self)
         button_show_password.setShortcut("Ctrl+P")
         button_show_password.setStatusTip(
             "Show password for selected record in the table")
@@ -502,9 +518,11 @@ class Sshot(QtGui.QMainWindow):
                      self._click_show_password)
         toolbar.addAction(button_show_password)
         button_refresh = QtGui.QAction(
-            QtGui.QIcon("%s/icons/refresh.png" % (project_path)), "Refresh", self)
+            QtGui.QIcon("%s/icons/refresh.png" % (project_path)),
+                        "Refresh", self)
         button_refresh.setShortcut("F5")
-        button_refresh.setStatusTip("Refresh the table to see new information")
+        button_refresh.setStatusTip(
+            "Refresh the table to see new information")
         self.connect(button_refresh, QtCore.SIGNAL('triggered()'),
                      self._click_refresh)
         toolbar.addAction(button_refresh)
@@ -512,7 +530,8 @@ class Sshot(QtGui.QMainWindow):
         toolbar.addSeparator()
         # -- Button Config
         button_config = QtGui.QAction(
-            QtGui.QIcon("%s/icons/config.png" % (project_path)), "Config", self)
+            QtGui.QIcon("%s/icons/config.png" % (project_path)),
+                        "Config", self)
         button_config.setShortcut("Ctrl+S")
         button_config.setStatusTip("Set configuration for the software")
         self.connect(button_config, QtCore.SIGNAL('triggered()'),
@@ -522,7 +541,8 @@ class Sshot(QtGui.QMainWindow):
         toolbar.addSeparator()
         # -- Button Donate
         button_donate = QtGui.QAction(
-            QtGui.QIcon("%s/icons/donate.png" % (project_path)), "Info", self)
+            QtGui.QIcon("%s/icons/donate.png" % (project_path)), "Info",
+                        self)
         button_donate.setShortcut("Ctrl+H")
         button_donate.setStatusTip("Help the poor developer")
         self.connect(button_donate, QtCore.SIGNAL('triggered()'),
@@ -530,7 +550,8 @@ class Sshot(QtGui.QMainWindow):
         toolbar.addAction(button_donate)
         # -- Button Info
         button_info = QtGui.QAction(
-            QtGui.QIcon("%s/icons/info.png" % (project_path)), "Info", self)
+            QtGui.QIcon("%s/icons/info.png" % (project_path)), "Info",
+                        self)
         button_info.setShortcut("Ctrl+?")
         button_info.setStatusTip("Show information about software")
         self.connect(button_info, QtCore.SIGNAL('triggered()'),
@@ -539,7 +560,9 @@ class Sshot(QtGui.QMainWindow):
         # ----- Content creation
         tabs = QtGui.QTabWidget()
         tabs.setTabsClosable(True)
-        QtCore.QObject.connect(tabs, QtCore.SIGNAL('tabCloseRequested(int)'), self._close_tab)
+        QtCore.QObject.connect(tabs,
+                               QtCore.SIGNAL('tabCloseRequested(int)'),
+                               self._close_tab)
         self.tabs = tabs
         main_tab = QtGui.QWidget()
         main_grid = QtGui.QGridLayout(main_tab)
@@ -557,11 +580,14 @@ class Sshot(QtGui.QMainWindow):
         menu.addSeparator()
         ti_show_action = menu.addAction('Show')
         ti_quit_action = menu.addAction('Quit')
-        QtCore.QObject.connect(ti_show_insert_form, QtCore.SIGNAL("triggered()"),
+        QtCore.QObject.connect(ti_show_insert_form,
+                               QtCore.SIGNAL("triggered()"),
                                self._click_insert)
-        QtCore.QObject.connect(ti_quit_action, QtCore.SIGNAL("triggered()"),
+        QtCore.QObject.connect(ti_quit_action,
+                               QtCore.SIGNAL("triggered()"),
                                self.close)
-        QtCore.QObject.connect(ti_show_action, QtCore.SIGNAL("triggered()"),
+        QtCore.QObject.connect(ti_show_action,
+                               QtCore.SIGNAL("triggered()"),
                                self._show_window)
         self.systray.setContextMenu(menu)
         self.systray.show()

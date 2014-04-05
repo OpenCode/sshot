@@ -39,7 +39,8 @@ __WEBSITE__ = 'www.e-ware.org'
 __PROJECT_WEBSITE__ = 'http://opencode.github.io/sshot/'
 
 connections_list_columns = ['ID', 'Name', 'Host', 'User',
-                            'Password', 'Port', 'Last Connection']
+                            'Password', 'Port', 'Last Connection',
+                            'Connections']
 connection_list_field = 'id, name, host, user, password, port, last_connection'
 user_home = expanduser('~')
 base_path = '%s%s%s' % (user_home, sep, '.sshot')
@@ -430,7 +431,7 @@ class Sshot(QtGui.QMainWindow):
         connections_list.setSelectionBehavior(
             QtGui.QAbstractItemView.SelectRows)
         connections_list.hideColumn(0)  # hide id column
-        connections_list.hideColumn(4)  # hide id column
+        connections_list.hideColumn(4)  # hide password column
         # ----- Adapt TableView Columns width to content
         connections_list.horizontalHeader().setResizeMode(
             QtGui.QHeaderView.Stretch)
@@ -442,6 +443,12 @@ class Sshot(QtGui.QMainWindow):
         # ----- Fill TableWidget with db datas
         row_count = 0
         for row in rows:
+            # ----- Add connections count in row
+            query = 'SELECT COUNT(id) FROM history WHERE connection_id = %s'
+            query = query % (row[0])
+            connection_rows = cr.execute(query).fetchall()
+            row = row + (str(connection_rows[0][0]), )
+            # ----- Filling
             for field in range(len(row)):
                 item = QtGui.QTableWidgetItem(str(row[field] or ''))
                 # ----- The rows are only selectable and not editable
@@ -489,7 +496,7 @@ class Sshot(QtGui.QMainWindow):
         # -- Button Delete
         button_delete = QtGui.QAction(
             QtGui.QIcon("%s/icons/delete.png" % (project_path)),
-                        "Delete", self)
+            "Delete", self)
         button_delete.setShortcut("Ctrl+D")
         button_delete.setStatusTip(
             "Delete one or more connections from the table")
@@ -498,8 +505,8 @@ class Sshot(QtGui.QMainWindow):
         toolbar.addAction(button_delete)
         # -- Button Insert
         button_insert = QtGui.QAction(
-            QtGui.QIcon("%s/icons/add.png" % (project_path)), "Insert",
-                        self)
+            QtGui.QIcon("%s/icons/add.png" % (project_path)),
+            "Insert", self)
         button_insert.setShortcut("Ctrl+I")
         button_insert.setStatusTip("Insert a new connection")
         self.connect(button_insert, QtCore.SIGNAL('triggered()'),
@@ -519,7 +526,7 @@ class Sshot(QtGui.QMainWindow):
         toolbar.addAction(button_show_password)
         button_refresh = QtGui.QAction(
             QtGui.QIcon("%s/icons/refresh.png" % (project_path)),
-                        "Refresh", self)
+            "Refresh", self)
         button_refresh.setShortcut("F5")
         button_refresh.setStatusTip(
             "Refresh the table to see new information")
@@ -531,7 +538,7 @@ class Sshot(QtGui.QMainWindow):
         # -- Button Config
         button_config = QtGui.QAction(
             QtGui.QIcon("%s/icons/config.png" % (project_path)),
-                        "Config", self)
+            "Config", self)
         button_config.setShortcut("Ctrl+S")
         button_config.setStatusTip("Set configuration for the software")
         self.connect(button_config, QtCore.SIGNAL('triggered()'),
@@ -541,8 +548,8 @@ class Sshot(QtGui.QMainWindow):
         toolbar.addSeparator()
         # -- Button Donate
         button_donate = QtGui.QAction(
-            QtGui.QIcon("%s/icons/donate.png" % (project_path)), "Info",
-                        self)
+            QtGui.QIcon("%s/icons/donate.png" % (project_path)),
+            "Info", self)
         button_donate.setShortcut("Ctrl+H")
         button_donate.setStatusTip("Help the poor developer")
         self.connect(button_donate, QtCore.SIGNAL('triggered()'),
@@ -550,8 +557,8 @@ class Sshot(QtGui.QMainWindow):
         toolbar.addAction(button_donate)
         # -- Button Info
         button_info = QtGui.QAction(
-            QtGui.QIcon("%s/icons/info.png" % (project_path)), "Info",
-                        self)
+            QtGui.QIcon("%s/icons/info.png" % (project_path)),
+            "Info", self)
         button_info.setShortcut("Ctrl+?")
         button_info.setStatusTip("Show information about software")
         self.connect(button_info, QtCore.SIGNAL('triggered()'),

@@ -27,128 +27,18 @@ import sys
 from PyQt4 import QtGui, QtCore
 from datetime import datetime
 import sqlite3
-from os.path import expanduser, isdir
+from os.path import expanduser, isdir, dirname, abspath
 from os import mkdir, sep, path
 import subprocess
+import sys
 
-
-__NAME__ = 'SSHot'
-__VERSION__ = '0.2.0'
-__AUTHOR__ = 'Francesco OpenCode Apruzzese <opencode@e-ware.org>'
-__WEBSITE__ = 'www.e-ware.org'
-__PROJECT_WEBSITE__ = 'http://opencode.github.io/sshot/'
-
-connections_list_columns = ['ID', 'Name', 'Host', 'User',
-                            'Password', 'Port', 'Last Connection',
-                            'Connections']
-connection_list_field = 'id, name, host, user, password, port, last_connection'
-user_home = expanduser('~')
-base_path = '%s%s%s' % (user_home, sep, '.sshot')
-project_path = path.dirname(path.realpath(__file__))
-
-
-def log(text):
-
-    print '[%s] %s' % (datetime.today(), text)
-
-
-def init_db(conn, cr):
-
-    # ----- CREATE TABLE connection IF NOT EXIST
-    sql = 'CREATE TABLE IF NOT EXISTS connection'
-    sql = '%s (id integer primary key default null, ' % (sql)
-    sql = '%sname str, user str, password str, host str, ' % (sql)
-    sql = '%sport str, last_connection str)' % (sql)
-    cr.execute(sql)
-    conn.commit()
-    # ----- CREATE TABLE setting IF NOT EXIST
-    sql = 'CREATE TABLE IF NOT EXISTS setting'
-    sql = '%s (id integer primary key default null, ' % (sql)
-    sql = '%skey str, value str)' % (sql)
-    cr.execute(sql)
-    conn.commit()
-    # ----- CREATE TABLE history IF NOT EXIST
-    sql = 'CREATE TABLE IF NOT EXISTS history'
-    sql = '%s (id integer primary key default null, ' % (sql)
-    sql = '%sconnection_id integer, date str)' % (sql)
-    cr.execute(sql)
-    conn.commit()
-    # ----- SET DEFAULT VALUE IN SETTING DB
-    #       use_external_terminal
-    sql = 'SELECT id FROM setting WHERE key = "use_external_terminal"'
-    res = cr.execute(sql)
-    if not res.fetchall():
-        sql = 'INSERT INTO setting (key, value) VALUES ("use_external_terminal", "False")'
-        cr.execute(sql)
-        conn.commit()
-    #       external_terminal
-    sql = 'SELECT id FROM setting WHERE key = "external_terminal"'
-    res = cr.execute(sql)
-    if not res.fetchall():
-        sql = 'INSERT INTO setting (key, value) VALUES ("external_terminal", "")'
-        cr.execute(sql)
-        conn.commit()
-    #       use tray icon
-    sql = 'SELECT id FROM setting WHERE key = "use_tray_icon"'
-    res = cr.execute(sql)
-    if not res.fetchall():
-        sql = 'INSERT INTO setting (key, value) VALUES ("use_tray_icon", "True")'
-        cr.execute(sql)
-        conn.commit()
-    return True
-
-
-def prepare_environment():
-
-    if not isdir(base_path):
-        mkdir(base_path)
-    return True
-
-
-class Config():
-
-    conn = False
-    cr = False
-
-    FIELDS = {
-        'use_external_terminal': ('boolean', False),
-        'external_terminal': ('string', ''),
-        'use_tray_icon': ('boolean', True),
-        }
-
-    use_external_terminal = False
-    external_terminal = ''
-    use_tray_icon = False
-
-    def get_value(self, key):
-        sql = 'SELECT value FROM setting WHERE key = "%s"' % (key)
-        res = self.cr.execute(sql)
-        res = res.fetchall()
-        if not res:
-            return self.FIELDS[key][1]
-        res = res[0][0]
-        # ----- Return a Bool value based on integer value in db
-        if self.FIELDS[key][0] == 'boolean':
-            if res == 'True':
-                return True
-            return False
-        return res
-
-    def set_value(self, key, value):
-        if self.FIELDS[key][0] == 'boolean':
-            value = value and 'True' or 'False'
-        sql = 'UPDATE setting SET value = "%s" WHERE key = "%s"' % (
-            value, key)
-        self.cr.execute(sql)
-        self.conn.commit()
-        return True
-
-    def __init__(self):
-        self.conn = sqlite3.connect('%s%s%s' % (base_path,
-                                                sep,
-                                                'sshot.db'))
-        self.cr = self.conn.cursor()
-
+project_abspath = dirname(abspath(__file__))
+sys.path.append(project_abspath)
+sys.path.append('%s%s%s' % (project_abspath, sep, 'utils'))
+from log import *
+from db import *
+from environment import *
+from config import Config
 
 class ConfigForm(QtGui.QMainWindow):
 
@@ -156,7 +46,7 @@ class ConfigForm(QtGui.QMainWindow):
     MainWindow = False
 
     def _save(self):
-        config = Config()
+        config = Config(self.conn)
         config.set_value('external_terminal',
                          self.external_terminal.text())
         config.set_value('use_external_terminal',
@@ -166,7 +56,10 @@ class ConfigForm(QtGui.QMainWindow):
 
     def __init__(self, MainWindow):
         self.MainWindow = MainWindow
-        config = Config()
+        self.conn = sqlite3.connect('%s%s%s' % (base_path,
+                                                sep,
+                                                'sshot.db'))
+        config = Config(self.conn)
         # ----- Window
         QtGui.QMainWindow.__init__(self)
         self.resize(550, 250)
@@ -204,8 +97,6 @@ class ConfigForm(QtGui.QMainWindow):
 
         cWidget.setLayout(grid)
         self.setCentralWidget(cWidget)
-
-        config = Config()
 
 
 class InsertForm(QtGui.QMainWindow):
@@ -302,7 +193,7 @@ class Sshot(QtGui.QMainWindow):
         port = self.connections_list.item(row, 5).text() or '22'
         log('Connect to %s with user %s' % (host, user))
         complete_host = '%s@%s' % (user, host)
-        config = Config()
+        config = Config(self.conn)
         if not config.get_value('use_external_terminal'):
             # ----- Create Space to embed terminal
             new_tab = QtGui.QWidget()
@@ -386,11 +277,11 @@ class Sshot(QtGui.QMainWindow):
         QtGui.QMessageBox.information(self, 'Info', infos)
 
     def _click_info(self):
-        infos = '%s\n\n' % (__NAME__)
-        infos = '%s%s\n\n' % (infos, __PROJECT_WEBSITE__)
-        infos = '%sVersion: %s\n' % (infos, __VERSION__)
-        infos = '%sAuthor: %s\n' % (infos, __AUTHOR__)
-        infos = '%sWebsite: %s\n' % (infos, __WEBSITE__)
+        infos = '%s\n\n' % (SSHOT_NAME)
+        infos = '%s%s\n\n' % (infos, SSHOT_PROJECT_WEBSITE)
+        infos = '%sVersion: %s\n' % (infos, SSHOT_VERSION)
+        infos = '%sAuthor: %s\n' % (infos, SSHOT_AUTHOR)
+        infos = '%sWebsite: %s\n' % (infos, SSHOT_WEBSITE)
         QtGui.QMessageBox.information(self, 'Info', infos)
 
     def _click_show_password(self):
@@ -476,7 +367,7 @@ class Sshot(QtGui.QMainWindow):
         QtGui.QMainWindow.__init__(self)
         self.setFocusPolicy(QtCore.Qt.StrongFocus)
         self.resize(900, 600)
-        #self.setWindowState(QtCore.Qt.WindowMaximized)
+        self.setWindowState(QtCore.Qt.WindowMaximized)
         self.setWindowTitle('SSHot')
         self.statusBar().showMessage(
             'SSHot: A Software To Rule Them All!')
@@ -600,7 +491,7 @@ class Sshot(QtGui.QMainWindow):
         self.systray.show()
 
     def closeEvent(self,  ev):
-        config = Config()
+        config = Config(self.conn)
         if config.get_value('use_tray_icon') and self.isVisible():
             self.hide()
             #self.systray.showMessage('SSHot', 'Application in TrayIcon')

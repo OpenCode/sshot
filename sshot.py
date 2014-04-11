@@ -27,10 +27,9 @@ import sys
 from PyQt4 import QtGui, QtCore
 from datetime import datetime
 import sqlite3
-from os.path import expanduser, isdir, dirname, abspath
-from os import mkdir, sep, path
+from os.path import dirname, abspath
+from os import sep
 import subprocess
-import sys
 
 project_abspath = dirname(abspath(__file__))
 sys.path.append(project_abspath)
@@ -39,6 +38,7 @@ from log import *
 from db import *
 from environment import *
 from config import Config
+
 
 class ConfigForm(QtGui.QMainWindow):
 
@@ -269,11 +269,18 @@ class Sshot(QtGui.QMainWindow):
         self.draw_table(cr, self.main_grid)
 
     def _click_donate(self):
-        infos = 'If you like %s (and we are sure you like it!!!) plese considere to donate to the project\n' % (__NAME__)
-        infos = '%sOur developer need RedBull to implement new features' % (infos)
-        infos = '%s and so we need money to buy RedBull!\n\nHelp us to feed developer\n\n' % (infos)
-        infos = '%sPAYPAL: cescoap@gmail.com\n\n' % (infos)
-        infos = '%sFLATTR: https://flattr.com/profile/opencode?public=1\n\n' % (infos)
+        infos = '''
+        If you like %s (and we are sure you like it!!!)
+        please considere to donate to the project
+
+        Our developer need RedBull to implement new features
+        and so we need money to buy RedBull!
+
+        Help us to feed developer
+
+        PAYPAL: cescoap@gmail.com
+        FLATTR: https://flattr.com/profile/opencode?public=1
+        ''' % (SSHOT_NAME)
         QtGui.QMessageBox.information(self, 'Info', infos)
 
     def _click_info(self):

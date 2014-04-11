@@ -23,7 +23,7 @@
 #
 # ######################################################################
 
-from os.path import expanduser, isdir, dirname, abspath
+from os.path import expanduser, isdir
 from os import mkdir, sep, path
 
 SSHOT_NAME = 'SSHot'
@@ -38,6 +38,7 @@ connections_list_columns = ['ID', 'Name', 'Host', 'User',
 user_home = expanduser('~')
 base_path = '%s%s%s' % (user_home, sep, '.sshot')
 project_path = path.dirname(path.realpath(__file__))
+
 
 def prepare_environment():
 

@@ -25,6 +25,7 @@
 
 connection_list_field = 'id, name, host, user, password, port, last_connection'
 
+
 def init_db(conn, cr):
 
     # ----- CREATE TABLE connection IF NOT EXIST
@@ -51,21 +52,24 @@ def init_db(conn, cr):
     sql = 'SELECT id FROM setting WHERE key = "use_external_terminal"'
     res = cr.execute(sql)
     if not res.fetchall():
-        sql = 'INSERT INTO setting (key, value) VALUES ("use_external_terminal", "False")'
+        sql = 'INSERT INTO setting (key, value) VALUES \
+              ("use_external_terminal", "False")'
         cr.execute(sql)
         conn.commit()
     #       external_terminal
     sql = 'SELECT id FROM setting WHERE key = "external_terminal"'
     res = cr.execute(sql)
     if not res.fetchall():
-        sql = 'INSERT INTO setting (key, value) VALUES ("external_terminal", "")'
+        sql = 'INSERT INTO setting (key, value) VALUES \
+              ("external_terminal", "")'
         cr.execute(sql)
         conn.commit()
     #       use tray icon
     sql = 'SELECT id FROM setting WHERE key = "use_tray_icon"'
     res = cr.execute(sql)
     if not res.fetchall():
-        sql = 'INSERT INTO setting (key, value) VALUES ("use_tray_icon", "True")'
+        sql = 'INSERT INTO setting (key, value) VALUES \
+              ("use_tray_icon", "True")'
         cr.execute(sql)
         conn.commit()
     return True

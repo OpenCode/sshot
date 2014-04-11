@@ -25,6 +25,7 @@
 
 from datetime import datetime
 
+
 def log(text):
 
     print '[%s] %s' % (datetime.today(), text)

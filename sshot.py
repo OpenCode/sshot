@@ -103,6 +103,20 @@ class Sshot(QtGui.QMainWindow):
         self.insert_form = InsertForm(self)
         self.insert_form.show()
 
+    def _click_edit(self):
+        select_model = self.connections_list.selectionModel()
+        if not select_model.selectedRows():
+            QtGui.QMessageBox.warning(
+                self, 'Error',
+                "Select a record from the table to modify it",
+                "Continue")
+        else:
+            model_index = select_model.selectedRows()[0]
+            selected_row = model_index.row()
+            id = self.connections_list.item(selected_row, 0).text()
+            self.insert_form = InsertForm(self, record_id=id)
+            self.insert_form.show()
+
     def _click_config(self):
         self.config_form = ConfigForm(self)
         self.config_form.show()
@@ -277,6 +291,15 @@ class Sshot(QtGui.QMainWindow):
         self.connect(button_insert, QtCore.SIGNAL('triggered()'),
                      self._click_insert)
         toolbar.addAction(button_insert)
+        # -- Button Edit
+        button_edit = QtGui.QAction(
+            QtGui.QIcon("%s/icons/edit.png" % (project_path)),
+            "Edit", self)
+        button_edit.setShortcut("Ctrl+E")
+        button_edit.setStatusTip("Modify connection")
+        self.connect(button_edit, QtCore.SIGNAL('triggered()'),
+                     self._click_edit)
+        toolbar.addAction(button_edit)
         # -- Separator
         toolbar.addSeparator()
         # -- Button Show Password

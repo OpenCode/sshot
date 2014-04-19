@@ -27,7 +27,7 @@ from os.path import expanduser, isdir
 from os import mkdir, sep, path
 
 SSHOT_NAME = 'SSHot'
-SSHOT_VERSION = '0.2.0'
+SSHOT_VERSION = '0.2.1'
 SSHOT_AUTHOR = 'Francesco OpenCode Apruzzese <opencode@e-ware.org>'
 SSHOT_WEBSITE = 'www.e-ware.org'
 SSHOT_PROJECT_WEBSITE = 'http://opencode.github.io/sshot/'

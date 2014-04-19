@@ -63,8 +63,5 @@ class Config():
         return True
 
     def __init__(self, conn):
-        #self.conn = sqlite3.connect('%s%s%s' % (base_path,
-        #                                        sep,
-        #                                        'sshot.db'))
         self.conn = conn
         self.cr = self.conn.cursor()

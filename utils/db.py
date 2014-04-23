@@ -72,4 +72,28 @@ def init_db(conn, cr):
               ("use_tray_icon", "True")'
         cr.execute(sql)
         conn.commit()
+    #       xterm geometry - columns number
+    sql = 'SELECT id FROM setting WHERE key = "xterm_geometry_columns"'
+    res = cr.execute(sql)
+    if not res.fetchall():
+        sql = 'INSERT INTO setting (key, value) VALUES \
+              ("xterm_geometry_columns", "140")'
+        cr.execute(sql)
+        conn.commit()
+    #       xterm geometry - rows number
+    sql = 'SELECT id FROM setting WHERE key = "xterm_geometry_rows"'
+    res = cr.execute(sql)
+    if not res.fetchall():
+        sql = 'INSERT INTO setting (key, value) VALUES \
+              ("xterm_geometry_rows", "30")'
+        cr.execute(sql)
+        conn.commit()
+    #       xterm font
+    sql = 'SELECT id FROM setting WHERE key = "xterm_font"'
+    res = cr.execute(sql)
+    if not res.fetchall():
+        sql = 'INSERT INTO setting (key, value) VALUES \
+              ("xterm_font", "-*-fixed-medium-r-*-*-18-*-*-*-*-*-iso8859-*")'
+        cr.execute(sql)
+        conn.commit()
     return True

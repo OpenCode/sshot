@@ -50,6 +50,12 @@ class ConfigForm(QtGui.QMainWindow):
                          self.use_external_terminal.isChecked())
         config.set_value('use_tray_icon',
                          self.use_tray_icon.isChecked())
+        config.set_value('xterm_geometry_columns',
+                         self.xterm_geometry_columns.text())
+        config.set_value('xterm_geometry_rows',
+                         self.xterm_geometry_rows.text())
+        config.set_value('xterm_font',
+                         self.xterm_font.text())
 
     def __init__(self, MainWindow):
         self.MainWindow = MainWindow
@@ -65,6 +71,27 @@ class ConfigForm(QtGui.QMainWindow):
 
         grid = QtGui.QGridLayout(cWidget)
 
+        lbl_application_configuration = QtGui.QLabel(
+            "Application Configuration:")
+        self.use_tray_icon = QtGui.QCheckBox("")
+        self.use_tray_icon.setChecked(
+            config.get_value('use_tray_icon'))
+        lbl_terminal_configuration = QtGui.QLabel(
+            "Terminal Configuration:")
+        lbl_xterm_geometry_columns = QtGui.QLabel(
+            "Columns")
+        self.xterm_geometry_columns = QtGui.QLineEdit(
+            str(config.get_value('xterm_geometry_columns')))
+        lbl_xterm_geometry_rows = QtGui.QLabel(
+            "Rows")
+        self.xterm_geometry_rows = QtGui.QLineEdit(
+            str(config.get_value('xterm_geometry_rows')))
+        lbl_xterm_font = QtGui.QLabel(
+            "Font")
+        self.xterm_font = QtGui.QLineEdit(
+            str(config.get_value('xterm_font')))
+        lbl_external_terminal_configuration = QtGui.QLabel(
+            "External Terminal Configuration:")
         lbl_use_external_terminal = QtGui.QLabel(
             "Use External Terminal Emulator")
         lbl_external_terminal = QtGui.QLabel("External Emulator")
@@ -75,22 +102,28 @@ class ConfigForm(QtGui.QMainWindow):
             config.get_value('use_external_terminal'))
         self.external_terminal = QtGui.QLineEdit(
             config.get_value('external_terminal'))
-        self.use_tray_icon = QtGui.QCheckBox("")
-        self.use_tray_icon.setChecked(
-            config.get_value('use_tray_icon'))
 
         button_save = QtGui.QPushButton('Save')
         button_save.setFont(QtGui.QFont("Times", 10, QtGui.QFont.Bold))
         self.connect(button_save, QtCore.SIGNAL('clicked()'),
                      self._save)
 
-        grid.addWidget(lbl_use_external_terminal, 0, 0)
-        grid.addWidget(self.use_external_terminal, 0, 1)
-        grid.addWidget(lbl_external_terminal, 1, 0)
-        grid.addWidget(self.external_terminal, 1, 1)
-        grid.addWidget(lbl_use_tray_icon, 2, 0)
-        grid.addWidget(self.use_tray_icon, 2, 1)
-        grid.addWidget(button_save, 3, 0)
+        grid.addWidget(lbl_application_configuration, 0, 0)
+        grid.addWidget(lbl_use_tray_icon, 1, 0)
+        grid.addWidget(self.use_tray_icon, 1, 1)
+        grid.addWidget(lbl_terminal_configuration, 2, 0)
+        grid.addWidget(lbl_xterm_geometry_columns, 3, 0)
+        grid.addWidget(self.xterm_geometry_columns, 3, 1)
+        grid.addWidget(lbl_xterm_geometry_rows, 4, 0)
+        grid.addWidget(self.xterm_geometry_rows, 4, 1)
+        grid.addWidget(lbl_xterm_font, 5, 0)
+        grid.addWidget(self.xterm_font, 5, 1)
+        grid.addWidget(lbl_external_terminal_configuration, 6, 0)
+        grid.addWidget(lbl_use_external_terminal, 7, 0)
+        grid.addWidget(self.use_external_terminal, 7, 1)
+        grid.addWidget(lbl_external_terminal, 8, 0)
+        grid.addWidget(self.external_terminal, 8, 1)
+        grid.addWidget(button_save, 9, 0)
 
         cWidget.setLayout(grid)
         self.setCentralWidget(cWidget)

@@ -74,6 +74,8 @@ class Sshot(QtGui.QMainWindow):
             complete_command = 'sshpass -p %s ssh %s -p %s; bash' % (
                 password, complete_host, port)
             args = ['xterm', '-title', name, '-into', embedder_id,
+                    '-font', config.get_value('xterm_font'),
+                    '-geometry', '140x30',
                     '-maximized', '-e', complete_command]
         else:
             external_terminal = config.get_value('external_terminal')

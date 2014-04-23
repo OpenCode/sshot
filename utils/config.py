@@ -33,6 +33,10 @@ class Config():
         'use_external_terminal': ('boolean', False),
         'external_terminal': ('string', ''),
         'use_tray_icon': ('boolean', True),
+        'xterm_geometry_columns': ('string', '140'),
+        'xterm_geometry_rows': ('string', '30'),
+        'xterm_font': ('string',
+                       '-*-fixed-medium-r-*-*-18-*-*-*-*-*-iso8859-*'),
         }
 
     use_external_terminal = False
